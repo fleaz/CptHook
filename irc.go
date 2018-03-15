@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/lrstanley/girc"
 	"github.com/spf13/viper"
@@ -62,8 +63,19 @@ func channelReceiver() {
 
 	for elem := range messageChannel {
 		fmt.Println("Took IRC event out of channel.")
+		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
-			fmt.Printf("Say '%s' in '%s'\n", message, elem.Channel)
+			client.Cmd.Message(elem.Channel, message)
 		}
 	}
+}
+
+func joinChannel(newChannel string) {
+	for _, channelName := range client.ChannelList() {
+		if strings.Compare(newChannel, channelName) == 0 {
+			return
+		}
+	}
+	fmt.Printf("Need to join new channel %s\n", newChannel)
+	client.Cmd.Join(newChannel)
 }
