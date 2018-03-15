@@ -8,9 +8,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-func statusHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1> Welcome on the status page</h1>")
+type IRCMessage struct {
+	Messages []string
+	Channels []string
 }
+
+var messageChannel = make(chan IRCMessage)
 
 func main() {
 
@@ -28,7 +31,18 @@ func main() {
 	if moduleList.GetBool("status.enabled") {
 		log.Println("Status module is active")
 		http.HandleFunc("/status", statusHandler)
+	} else {
+		log.Println("Status module disabled of not configured")
 	}
+
+	// Prometheus module
+	if moduleList.GetBool("prometheus.enabled") {
+		log.Println("Prometheus module is active")
+		http.HandleFunc("/prometheus", prometheusHandler)
+	}
+
+	// Start IRC worker process
+	go ircChannelWorker()
 
 	// Start HTTP server
 	log.Fatal(http.ListenAndServe(viper.GetString("http.listen"), nil))
