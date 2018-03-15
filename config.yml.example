@@ -1,0 +1,20 @@
+http:
+    listen: string
+
+irc:
+    host: string
+    port: int
+    nickname: string
+    password: string
+    account_name: string
+    account_pass: string
+    cafile: string
+
+modules:
+    status:
+        enabled: bool
+        basicauth_user: string
+        basicauth_pass: string
+    prometheus:
+        enabled: bool
+        channel: string
