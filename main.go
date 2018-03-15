@@ -10,7 +10,7 @@ import (
 
 type IRCMessage struct {
 	Messages []string
-	Channels []string
+	Channel  string
 }
 
 var messageChannel = make(chan IRCMessage)
@@ -41,8 +41,8 @@ func main() {
 		http.HandleFunc("/prometheus", prometheusHandler)
 	}
 
-	// Start IRC worker process
-	go ircChannelWorker()
+	// Start IRC connection
+	go ircConnection(viper.Sub("irc"))
 
 	// Start HTTP server
 	log.Fatal(http.ListenAndServe(viper.GetString("http.listen"), nil))

@@ -6,5 +6,6 @@ import (
 )
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Got http event for /status")
 	fmt.Fprintf(w, "<h1> Welcome on the status page</h1>")
 }
