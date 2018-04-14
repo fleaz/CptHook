@@ -19,4 +19,3 @@ When you want to create a new module, e.g. 'Foo' you have to do three things:
   - Add a section 'foo' to the `config.yml.example`. Everything under `config.foo` will be provided to your module
   - Add the '/foo' endpoint to the `main.go` file
   - Create a `foo.go` file in the `main` package and provide a handler function
-  
