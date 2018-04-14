@@ -38,9 +38,7 @@ func main() {
 	// Prometheus module
 	if moduleList.GetBool("prometheus.enabled") {
 		log.Println("Prometheus module is active")
-		http.HandleFunc("/prometheus", func(w http.ResponseWriter, r *http.Request) {
-			prometheusHandler(viper.Sub("modules.prometheus"))
-		})
+		http.HandleFunc("/prometheus", prometheusHandler(viper.Sub("modules.prometheus")))
 	}
 
 	// Start IRC connection
