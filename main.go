@@ -13,7 +13,7 @@ type IRCMessage struct {
 	Channel  string
 }
 
-var messageChannel = make(chan IRCMessage)
+var messageChannel = make(chan IRCMessage, 10)
 
 func main() {
 
