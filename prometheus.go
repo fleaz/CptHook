@@ -92,8 +92,7 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
 
-
-	return func(w http.ResponseWriter, r *http.Request){
+	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		decoder := json.NewDecoder(r.Body)
 
@@ -104,13 +103,12 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 			return
 		}
 
-		body, err := json.Marshal(&notification)
+		_, err := json.Marshal(&notification)
 
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		log.Printf("JSON: %v", string(body))
 
 		var sortedAlerts = make(map[string][]Alert)
 		sortedAlerts["firing"], sortedAlerts["resolved"] = SortAlerts(notification.Alerts)
@@ -164,6 +162,5 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 			}
 		}
 	}
-
 
 }

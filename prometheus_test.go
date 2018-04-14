@@ -1,16 +1,15 @@
 package main
 
 import (
-	"net/http/httptest"
-	"net/http"
-	"testing"
-	"github.com/spf13/viper"
 	"fmt"
+	"github.com/spf13/viper"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"testing"
 )
 
-
-func TestPrometheusHandler(t *testing.T){
+func TestPrometheusHandler(t *testing.T) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
@@ -37,6 +36,6 @@ func TestPrometheusHandler(t *testing.T){
 
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Handler returned wrong status code: got %v wanted %v",
-				status, http.StatusOK)
+			status, http.StatusOK)
 	}
 }
