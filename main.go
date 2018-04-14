@@ -39,7 +39,7 @@ func main() {
 	if moduleList.GetBool("prometheus.enabled") {
 		log.Println("Prometheus module is active")
 		http.HandleFunc("/prometheus", func(w http.ResponseWriter, r *http.Request) {
-			prometheusHandler(w, r, viper.Sub("modules.prometheus"))
+			prometheusHandler(viper.Sub("modules.prometheus"))
 		})
 	}
 

@@ -70,7 +70,7 @@ func getColorcode(status string) string {
 	}
 }
 
-func prometheusHandler(w http.ResponseWriter, r *http.Request, c *viper.Viper) {
+func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 	fmt.Println("Got http event for /prometheus")
 
 	const firingTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}} - {{ .Alert.Annotations.description}}"
@@ -92,75 +92,78 @@ func prometheusHandler(w http.ResponseWriter, r *http.Request, c *viper.Viper) {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
 
-	defer r.Body.Close()
-	decoder := json.NewDecoder(r.Body)
 
-	var notification Notification
+	return func(w http.ResponseWriter, r *http.Request){
+		defer r.Body.Close()
+		decoder := json.NewDecoder(r.Body)
 
-	if err := decoder.Decode(&notification); err != nil {
-		log.Println(err)
-		return
-	}
+		var notification Notification
 
-	body, err := json.Marshal(&notification)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Printf("JSON: %v", string(body))
-
-	var sortedAlerts = make(map[string][]Alert)
-	sortedAlerts["firing"], sortedAlerts["resolved"] = SortAlerts(notification.Alerts)
-
-	var instance Instance
-	var instanceList []Instance
-	var buf bytes.Buffer
-
-	for alertStatus, alertList := range sortedAlerts {
-		// Clear buffer
-		buf.Reset()
-		// Clear InstanceList
-		instanceList = instanceList[:0]
-
-		for _, alert := range alertList {
-			name := alert.Labels["instance"].(string)
-			// TODO: Add hostname shortening
-			value, ok := alert.Annotations["value"].(string)
-			if ok {
-				instance = Instance{Name: name, Value: value}
-			} else {
-				instance = Instance{Name: name}
-			}
-			instanceList = append(instanceList, instance)
+		if err := decoder.Decode(&notification); err != nil {
+			log.Println(err)
+			return
 		}
 
-		context := NotificationContext{
-			Alert:         &notification.Alerts[0],
-			Notification:  &notification,
-			Status:        strings.ToUpper(alertStatus),
-			InstanceCount: len(instanceList),
-			ColorStart:    getColorcode(alertStatus),
-			ColorEnd:      "\x03",
-		}
+		body, err := json.Marshal(&notification)
 
-		if context.InstanceCount > 0 {
-			// Sort instances
-			//sort.Strings(instanceList)
-			if strings.Compare(alertStatus, "firing") == 0 {
-				_ = firingTemplate.Execute(&buf, &context)
-			} else {
-				_ = resolvedTemplate.Execute(&buf, &context)
-			}
-			bot.Privmsg(*channel, buf.String())
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Printf("JSON: %v", string(body))
+
+		var sortedAlerts = make(map[string][]Alert)
+		sortedAlerts["firing"], sortedAlerts["resolved"] = SortAlerts(notification.Alerts)
+
+		var instance Instance
+		var instanceList []Instance
+		var buf bytes.Buffer
+
+		for alertStatus, alertList := range sortedAlerts {
+			// Clear buffer
 			buf.Reset()
-			_ = hostListTemplate.Execute(&buf, &instanceList)
-			bot.Privmsg(*channel, buf.String())
-			// var event IRCMessage
-			// event.Messages = append(event.Messages, "prometheus rocks")
-			// event.Channel = c.GetString("channel")
-			// messageChannel <- event
+			// Clear InstanceList
+			instanceList = instanceList[:0]
+
+			for _, alert := range alertList {
+				name := alert.Labels["instance"].(string)
+				// TODO: Add hostname shortening
+				value, ok := alert.Annotations["value"].(string)
+				if ok {
+					instance = Instance{Name: name, Value: value}
+				} else {
+					instance = Instance{Name: name}
+				}
+				instanceList = append(instanceList, instance)
+			}
+
+			context := NotificationContext{
+				Alert:         &notification.Alerts[0],
+				Notification:  &notification,
+				Status:        strings.ToUpper(alertStatus),
+				InstanceCount: len(instanceList),
+				ColorStart:    getColorcode(alertStatus),
+				ColorEnd:      "\x03",
+			}
+
+			if context.InstanceCount > 0 {
+				// Sort instances
+				//sort.Strings(instanceList)
+				if strings.Compare(alertStatus, "firing") == 0 {
+					_ = firingTemplate.Execute(&buf, &context)
+				} else {
+					_ = resolvedTemplate.Execute(&buf, &context)
+				}
+				var event IRCMessage
+				event.Messages = append(event.Messages, buf.String())
+				buf.Reset()
+				_ = hostListTemplate.Execute(&buf, &instanceList)
+				event.Messages = append(event.Messages, buf.String())
+				event.Channel = c.GetString("channel")
+				messageChannel <- event
+			}
 		}
 	}
+
 
 }
