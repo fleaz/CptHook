@@ -3,3 +3,5 @@ language: go
 go:
   - "1.10"
 
+before_install:
+  - cp config.yml.example config.yml
