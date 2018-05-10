@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 )
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got http event for /status")
-	fmt.Fprintf(w, "<h1> Welcome on the status page</h1>")
+	t, _ := template.ParseFiles("status.html")
+	t.Execute(w, nil)
 }
