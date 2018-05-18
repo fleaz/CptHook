@@ -16,3 +16,6 @@ config.yml
 .idea/
 *.crt
 vendor/
+
+# Binarys
+webhook-gateway

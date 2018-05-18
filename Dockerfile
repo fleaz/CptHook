@@ -1,10 +1,8 @@
-FROM scratch
+FROM alpine
 LABEL maintainer mail@fleaz.me
 
-COPY ca-certificates.crt /etc/ssl/certs/
-COPY main /
-
-
-
-EXPOSE 8083
-CMD ["/main"]
+RUN apk add --no-cache ca-certificates
+COPY templates/ /
+COPY webhook-gateway /
+EXPOSE 8086
+CMD ["/webhook-gateway"]
