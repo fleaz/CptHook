@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -71,7 +70,6 @@ func getColorcode(status string) string {
 }
 
 func prometheusHandler(c *viper.Viper) http.HandlerFunc {
-	fmt.Println("Got http event for /prometheus")
 
 	const firingTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}} - {{ .Alert.Annotations.description}}"
 	const resolvedTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}}"
@@ -93,6 +91,7 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Got http event for /prometheus")
 		defer r.Body.Close()
 		decoder := json.NewDecoder(r.Body)
 
