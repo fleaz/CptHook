@@ -1,20 +1,25 @@
 http:
-    listen: string
+    listen: ":8086"
 
 irc:
-    host: string
-    port: int
-    nickname: string
-    password: string
-    account_name: string
-    account_pass: string
-    cafile: string
+    host: "irc.hackint.eu"
+    port: 6667
+    nickname: "webhook-bot"
+    cafile: "/etc/ssl/hackint.pem"
 
 modules:
     status:
-        enabled: bool
-        basicauth_user: string
-        basicauth_pass: string
+        enabled: true
     prometheus:
-        enabled: bool
-        channel: string
+        enabled: true
+        channel: "#prometeusChannel"
+    gitlab:
+        enabled: true
+        default: "#defaultChannel"
+        groups:
+            "myGitlabGroup":
+                - "#groupChannel"
+        explicit:
+            "myGitlabGroup/mySpecialGitlabProject":
+                - "#specificChannel"
+

@@ -14,9 +14,9 @@ import (
 )
 
 type Mapping struct {
-	DefaultChannel   string              `yaml:"default"`
-	GroupMappings    map[string][]string `yaml:"groups"`
-	ExplicitMappings map[string][]string `yaml:"explicit"`
+	DefaultChannel   string              `mapstructure:"default"`
+	GroupMappings    map[string][]string `mapstructure:"groups"`
+	ExplicitMappings map[string][]string `mapstructure:"explicit"`
 }
 
 func contains(mapping map[string][]string, entry string) bool {
@@ -86,7 +86,6 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 	err := c.Unmarshal(&channelMapping)
 	if err != nil {
 		log.Fatal("Failed to unmarshal channelmapping into struct")
-
 	}
 
 	const NullCommit = "0000000000000000000000000000000000000000"
