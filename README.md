@@ -1,5 +1,4 @@
 # webhook-gateway
-Receive webhooks from different applications and post them to different IRC channels
 
 After writing a webhook receiver for both Prometheus and Gitlab, to post notifications to
 an IRC channel, I decided to merge the code an build something more generic. Many applications
@@ -14,8 +13,31 @@ is nearly identical all the time:
 The points `3` and `4` get handled by the specific modules. All the other points are generic
 and can be reused for every module.
 
+## Installation
+Local installation
+```
+cp config.yml.example config.yml
+dep ensure
+go build
+go run
+```
+or use the prebuild Dockercontainer
+```
+cp config.yml.example config.yml
+docker run --rm -it -v $(pwd)/config.yml:/config.yml -v 8086:8086 fleaz/webhook-gw
+```
+
 ## Modules
 When you want to create a new module, e.g. 'Foo' you have to do three things:
   - Add a section 'foo' to the `config.yml.example`. Everything under `config.foo` will be provided to your module
   - Add the '/foo' endpoint to the `main.go` file
   - Create a `foo.go` file in the `main` package and provide a handler function
+
+### Status
+This will soon be used to have a small web interface to show e.g. the last received webhooks.
+
+### Prometheus
+Receives webhooks from Alertmanager.
+
+### Gitlab
+Receives webhooks from Gitlab. Currently not all types are implemented!
