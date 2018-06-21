@@ -5,8 +5,7 @@ go:
 
 env:
   global:
-    - REPO="fleaz/webhook-gateway"
-    - COMMIT=${TRAVIS_COMMIT::8}
+    - IMAGE="fleaz/webhook-gateway"
 
 before_install:
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
