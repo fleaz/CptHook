@@ -7,6 +7,9 @@ env:
   global:
     - IMAGE="fleaz/webhook-gateway"
 
+services:
+  - docker
+
 before_install:
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
   - dep ensure
