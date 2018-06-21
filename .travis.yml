@@ -9,15 +9,13 @@ env:
     - COMMIT=${TRAVIS_COMMIT::8}
 
 before_install:
-  - go get github.com/golang/dep
-
-install:
-    - cp config.yml.example config.yml
-    - dep ensure
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
+  - dep ensure
 
 script:
-    - go test
-    - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o webhook-gateway
+  - cp config.yml.example config.yml
+  - go test
+  - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o webhook-gateway
 
 deploy:
   - provider: script
