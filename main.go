@@ -41,6 +41,12 @@ func main() {
 		http.HandleFunc("/prometheus", prometheusHandler(viper.Sub("modules.prometheus")))
 	}
 
+	// Gitlab module
+	if moduleList.GetBool("gitlab.enabled") {
+		log.Println("Gitlab module is active")
+		http.HandleFunc("/gitlab", gitlabHandler(viper.Sub("modules.gitlab")))
+	}
+
 	// Start IRC connection
 	go ircConnection(viper.Sub("irc"))
 
