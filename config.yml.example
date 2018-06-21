@@ -1,0 +1,25 @@
+http:
+    listen: ":8086"
+
+irc:
+    host: "irc.hackint.eu"
+    port: 6667
+    nickname: "webhook-bot"
+    cafile: "/etc/ssl/hackint.pem"
+
+modules:
+    status:
+        enabled: true
+    prometheus:
+        enabled: true
+        channel: "#prometeusChannel"
+    gitlab:
+        enabled: true
+        default: "#defaultChannel"
+        groups:
+            "myGitlabGroup":
+                - "#groupChannel"
+        explicit:
+            "myGitlabGroup/mySpecialGitlabProject":
+                - "#specificChannel"
+

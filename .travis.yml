@@ -1,0 +1,24 @@
+---
+language: go
+go:
+  - "1.10"
+
+env:
+  global:
+    - REPO="fleaz/webhook-gateway"
+    - COMMIT=${TRAVIS_COMMIT::8}
+
+before_install:
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
+  - dep ensure
+
+script:
+  - cp config.yml.example config.yml
+  - go test
+  - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o webhook-gateway
+
+deploy:
+  - provider: script
+    script: bash scripts/deploy.sh
+    on:
+      branch: master

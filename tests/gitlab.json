@@ -1,0 +1,60 @@
+{
+    "object_kind": "push",
+    "event_name": "push",
+    "before": "67439b1194065dc91e870a2586b9bdaca31a0329",
+    "after": "eab6be5cae1ab443b61e1800b3c93f7120cef600",
+    "ref": "refs/heads/master",
+    "checkout_sha": "eab6be5cae1ab443b61e1800b3c93f7120cef600",
+    "message": null,
+    "user_id": 23,
+    "user_name": "psy",
+    "user_username": "psy",
+    "user_email": "psy@darmstadt.ccc.de",
+    "user_avatar": "https://git.darmstadt.ccc.de/uploads/-/system/user/avatar/23/avatar.png",
+    "project_id": 70,
+    "project": {
+        "id": 70,
+        "name": "doku",
+        "description": "all the doku & logs",
+        "web_url": "https://git.darmstadt.ccc.de/cda/doku",
+        "avatar_url": null,
+        "git_ssh_url": "git@git.darmstadt.ccc.de:cda/doku.git",
+        "git_http_url": "https://git.darmstadt.ccc.de/cda/doku.git",
+        "namespace": "cda",
+        "visibility_level": 20,
+        "path_with_namespace": "cda/doku",
+        "default_branch": "master",
+        "ci_config_path": null,
+        "homepage": "https://git.darmstadt.ccc.de/cda/doku",
+        "url": "git@git.darmstadt.ccc.de:cda/doku.git",
+        "ssh_url": "git@git.darmstadt.ccc.de:cda/doku.git",
+        "http_url": "https://git.darmstadt.ccc.de/cda/doku.git"
+    },
+    "commits": [
+        {
+            "id": "eab6be5cae1ab443b61e1800b3c93f7120cef600",
+            "message": "Plenumsprotokoll KW 25\n",
+            "timestamp": "2018-06-21T21:14:03+02:00",
+            "url": "https://git.darmstadt.ccc.de/cda/doku/commit/eab6be5cae1ab443b61e1800b3c93f7120cef600",
+            "author": {
+                "name": "psy",
+                "email": "psy@darmstadt.ccc.de"
+            },
+            "added": [
+                "Plenum/2018-06-21-Protokoll.md"
+            ],
+            "modified": [],
+            "removed": []
+        }
+    ],
+    "total_commits_count": 1,
+    "repository": {
+        "name": "doku",
+        "url": "git@git.darmstadt.ccc.de:cda/doku.git",
+        "description": "all the doku & logs",
+        "homepage": "https://git.darmstadt.ccc.de/cda/doku",
+        "git_http_url": "https://git.darmstadt.ccc.de/cda/doku.git",
+        "git_ssh_url": "git@git.darmstadt.ccc.de:cda/doku.git",
+        "visibility_level": 20
+    }
+}
