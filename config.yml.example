@@ -13,6 +13,7 @@ modules:
     prometheus:
         enabled: true
         channel: "#prometeusChannel"
+        hostname_filter: "(\\w*)\\.company.com:\\d{4}"
     gitlab:
         enabled: true
         default: "#defaultChannel"
