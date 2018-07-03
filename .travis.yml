@@ -2,6 +2,9 @@
 language: go
 go:
   - "1.10"
+  
+services:
+  - docker
 
 env:
   global:
