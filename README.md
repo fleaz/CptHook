@@ -17,20 +17,20 @@ and can be reused for every module.
 ## Installation
 Local installation
 ```
-cp config.yml.example config.yml
+cp cpthook.yml.example cpthook.yml
 dep ensure
 go build
 go run
 ```
 or use the prebuild Dockercontainer
 ```
-cp config.yml.example config.yml
-docker run --rm -it -v $(pwd)/config.yml:/config.yml -v 8086:8086 fleaz/webhook-gw
+cp cpthook.yml.example config.yml
+docker run --rm -it -v $(pwd)/cpthook.yml:/cpthook.yml -v 8086:8086 fleaz/cpthook
 ```
 
 ## Modules
 When you want to create a new module, e.g. 'Foo' you have to do three things:
-  - Add a section 'foo' to the `config.yml.example`. Everything under `config.foo` will be provided to your module
+  - Add a section 'foo' to the `cpthook.yml.example`. Everything under `cpthook.foo` will be provided to your module
   - Add the '/foo' endpoint to the `main.go` file
   - Create a `foo.go` file in the `main` package and provide a handler function
 
