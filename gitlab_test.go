@@ -11,7 +11,7 @@ import (
 )
 
 func TestGitlabHandler(t *testing.T) {
-	viper.SetConfigName("config")
+	viper.SetConfigName("cpthook")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
