@@ -5,10 +5,8 @@ go:
 
 env:
   global:
-    - IMAGE="fleaz/webhook-gateway"
-
-services:
-  - docker
+    - REPO="fleaz/CptHook"
+    - COMMIT=${TRAVIS_COMMIT::8}
 
 before_install:
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
@@ -17,7 +15,7 @@ before_install:
 script:
   - cp config.yml.example config.yml
   - go test
-  - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o webhook-gateway
+  - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o CptHook
 
 deploy:
   - provider: script

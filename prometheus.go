@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -69,6 +70,16 @@ func getColorcode(status string) string {
 	}
 }
 
+func shortenInstanceName(name string, pattern string) string {
+	r := regexp.MustCompile(pattern)
+	match := r.FindStringSubmatch(name)
+	if len(match) > 1 {
+		return match[1]
+	} else {
+		return name
+	}
+}
+
 func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 
 	const firingTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}} - {{ .Alert.Annotations.description}}"
@@ -124,7 +135,7 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 
 			for _, alert := range alertList {
 				name := alert.Labels["instance"].(string)
-				// TODO: Add hostname shortening
+				name = shortenInstanceName(name, c.GetString("hostname_filter"))
 				value, ok := alert.Annotations["value"].(string)
 				if ok {
 					instance = Instance{Name: name, Value: value}
