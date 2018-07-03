@@ -3,6 +3,6 @@ LABEL maintainer mail@fleaz.me
 
 RUN apk add --no-cache ca-certificates
 COPY templates/ /
-COPY webhook-gateway /
+COPY CptHook /
 EXPOSE 8086
-CMD ["/webhook-gateway"]
+CMD ["/CptHook"]

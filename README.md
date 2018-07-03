@@ -1,4 +1,4 @@
-# webhook-gateway
+# CptHook
 Receive webhooks from different applications and post them to different IRC channels
 
 After writing a webhook receiver for both Prometheus and Gitlab, to post notifications to
