@@ -5,7 +5,7 @@ go:
 
 env:
   global:
-    - IMAGE="fleaz/CptHook"
+    - IMAGE="fleaz/cpthook"
     - COMMIT=${TRAVIS_COMMIT::8}
 
 before_install:
