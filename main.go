@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -17,12 +19,17 @@ type IRCMessage struct {
 var messageChannel = make(chan IRCMessage, 10)
 
 func main() {
-	confDirPtr := flag.String("configdir", ".", "The folder of your cpthook.yml (Required)")
+	confDirPtr := flag.String("config", "/etc/cpthook.yml", "Path to the configfile")
 	flag.Parse()
 
-	// Load configuration frm file
-	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(*confDirPtr)
+	// Load configuration from file
+	confDir, confName := path.Split(*confDirPtr)
+	viper.SetConfigName(strings.Split(confName, ".")[0])
+	if len(confDir) > 0 {
+		viper.AddConfigPath(confDir)
+	} else {
+		viper.AddConfigPath(".")
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %s", err))
