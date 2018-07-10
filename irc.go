@@ -46,7 +46,7 @@ func ircConnection(config *viper.Viper) {
 	client = girc.New(clientConfig)
 
 	client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
-		c.Cmd.Join("#fleaz")
+		c.Cmd.Whois(clientConfig.Nick)
 	})
 
 	// Start thread to process message queue
