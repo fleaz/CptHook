@@ -42,3 +42,7 @@ Receives webhooks from Alertmanager.
 
 ### Gitlab
 Receives webhooks from Gitlab. Currently not all types are implemented!
+
+### Simple
+Receives arbitrary messages as text via a HTTP `POST` request and forwards this message line by line to a channel.
+The channel can be specified by the `channel` query parameter or the `default_channel` from the config is used.
