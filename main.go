@@ -57,6 +57,12 @@ func main() {
 		http.HandleFunc("/gitlab", gitlabHandler(viper.Sub("modules.gitlab")))
 	}
 
+	// Simple module
+	if moduleList.GetBool("simple.enabled") {
+		log.Println("Simple module is active")
+		http.HandleFunc("/simple", simpleHandler(viper.Sub("modules.simple")))
+	}
+
 	// Start IRC connection
 	go ircConnection(viper.Sub("irc"))
 
