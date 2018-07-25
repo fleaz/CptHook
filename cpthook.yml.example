@@ -4,8 +4,17 @@ http:
 irc:
     host: "irc.hackint.eu"
     port: 6667
+    ssl:
+        enabled: true
+        cafile: "/etc/ssl/hackint.pem"
+        client_cert:
+            certfile: "/home/bot/bot.cert"
+            keyfile: "/home/bot/bot.key"
     nickname: "webhook-bot"
-    cafile: "/etc/ssl/hackint.pem"
+    auth:
+        method: SASL-Plain
+        username: "webhook-bot"
+        password: "VerySecure!"
 
 modules:
     status:

@@ -28,6 +28,15 @@ cp cpthook.yml.example config.yml
 docker run --rm -it -v $(pwd)/cpthook.yml:/cpthook.yml -v 8086:8086 fleaz/cpthook
 ```
 
+## Authentication
+SASL support is available to authenticate to the server.
+The following methods are supported:
+ - `SASL-Plain` uses plaintext username and password authentication
+ - `SASL-External` can be used with external authentication mechanism like CertFP
+
+To use CertFP, a client certificate (`certfile`) and key (`keyfile`) must be specified in the `irc.ssl.client_cert`
+section and the `SASL-External` authentication method must be used.
+
 ## Modules
 When you want to create a new module, e.g. 'Foo' you have to do three things:
   - Add a section 'foo' to the `cpthook.yml.example`. Everything under `cpthook.foo` will be provided to your module
