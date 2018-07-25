@@ -22,25 +22,58 @@ func ircConnection(config *viper.Viper) {
 		User:   config.GetString("nickname"),
 	}
 
-	if config.GetBool("ssl") {
-		clientConfig.SSL = true
+	if config.IsSet("auth") {
+		auth := config.Sub("auth")
+
+		switch auth.GetString("method") {
+		case "SASL-Plain":
+			clientConfig.SASL = &girc.SASLPlain{
+				User: auth.GetString("username"),
+				Pass: auth.GetString("password"),
+			}
+
+		case "SASL-External":
+			clientConfig.SASL = &girc.SASLExternal{
+				Identity: auth.GetString("identity"),
+			}
+
+		default:
+			panic("Unsupported authentication method")
+		}
 	}
 
-	if config.IsSet("cafile") {
-		cafile := config.GetString("cafile")
-		caCertPool := x509.NewCertPool()
-		caCert, err := ioutil.ReadFile(cafile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		caCertPool.AppendCertsFromPEM(caCert)
+	if config.IsSet("ssl") {
+		// Enable / Disable SSL
+		config.SetDefault("ssl.enabled", true)
+		clientConfig.SSL = config.GetBool("ssl.enabled")
 
-		tlsConfig := &tls.Config{
-			RootCAs:    caCertPool,
+		clientConfig.TLSConfig = &tls.Config{
 			ServerName: config.GetString("host"),
 		}
 
-		clientConfig.TLSConfig = tlsConfig
+		// Configure server certificate
+		if cafile := config.GetString("ssl.cafile"); cafile != "" {
+			caCert, err := ioutil.ReadFile(cafile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			clientConfig.TLSConfig.RootCAs = x509.NewCertPool()
+			clientConfig.TLSConfig.RootCAs.AppendCertsFromPEM(caCert)
+		}
+
+		// Configure client certificate
+		if config.IsSet("ssl.client_cert") {
+			certfile := config.GetString("ssl.client_cert.certfile")
+			keyfile := config.GetString("ssl.client_cert.keyfile")
+
+			cert, err := tls.LoadX509KeyPair(certfile, keyfile)
+			if err != nil {
+				log.Fatalf("Invalid client certificate: %s", err)
+			}
+
+			clientConfig.TLSConfig.Certificates = []tls.Certificate{cert}
+		}
 	}
 
 	client = girc.New(clientConfig)
