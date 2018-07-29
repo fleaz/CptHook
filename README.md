@@ -25,7 +25,7 @@ go run
 or use the prebuild Dockercontainer
 ```
 cp cpthook.yml.example cpthook.yml
-docker run --rm -it -v $(pwd)/cpthook.yml:/cpthook.yml -v 8086:8086 fleaz/cpthook
+docker run --rm -it -v $(pwd)/cpthook.yml:/etc/cpthook.yml -p 8086:8086 fleaz/cpthook
 ```
 
 ## Authentication
