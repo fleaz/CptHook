@@ -1,12 +1,23 @@
 package main
 
 import (
-	"net/http"
-	"github.com/spf13/viper"
 	"bufio"
+	"net/http"
+
+	"github.com/spf13/viper"
 )
 
-func simpleHandler(c *viper.Viper) http.HandlerFunc {
+type SimpleModule struct{}
+
+func (m SimpleModule) getChannelList() []string {
+	return nil
+}
+
+func (m SimpleModule) getEndpoint() string {
+	return "/simple"
+}
+
+func (m SimpleModule) getHandler(c *viper.Viper) http.HandlerFunc {
 
 	defaultChannel := c.GetString("default_channel")
 
