@@ -31,7 +31,8 @@ func TestPrometheusHandler(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(prometheusHandler(viper.Sub("modules.prometheus")))
+	var pH Module = PrometheusModule{}
+	handler := http.HandlerFunc(pH.getHandler(viper.Sub("modules.prometheus")))
 
 	handler.ServeHTTP(rr, req)
 
