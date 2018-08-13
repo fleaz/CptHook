@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/lrstanley/girc"
 	"github.com/spf13/viper"
@@ -85,8 +86,12 @@ func ircConnection(config *viper.Viper) {
 	// Start thread to process message queue
 	go channelReceiver()
 
-	if err := client.Connect(); err != nil {
-		log.Fatalf("An error occurred while attempting to connect to %s: %s", client.Server(), err)
+	for {
+		if err := client.Connect(); err != nil {
+			log.Printf("Connection to %s terminated: %s", client.Server(), err)
+			log.Printf("Reconnecting to %s in 30 seconds...", client.Server())
+			time.Sleep(30 * time.Second)
+		}
 	}
 
 }
