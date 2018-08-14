@@ -26,3 +26,7 @@ deploy:
     script: bash scripts/deploy.sh
     on:
       branch: master
+
+notifications:
+  webhooks:
+    - http://webhooks.rainbownerds.de:12345
