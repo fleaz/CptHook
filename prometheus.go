@@ -14,6 +14,8 @@ import (
 )
 
 type PrometheusModule struct {
+	defaultChannel string
+	hostnameFilter string
 }
 
 type alert struct {
@@ -87,10 +89,15 @@ func (m PrometheusModule) getEndpoint() string {
 }
 
 func (m PrometheusModule) getChannelList() []string {
-	return []string{"foo", "bar"}
+	return []string{m.defaultChannel}
 }
 
-func (m PrometheusModule) getHandler(c *viper.Viper) http.HandlerFunc {
+func (m PrometheusModule) init(c *viper.Viper) {
+	m.defaultChannel = c.GetString("channel")
+	m.hostnameFilter = c.GetString("hostname_filter")
+}
+
+func (m PrometheusModule) getHandler() http.HandlerFunc {
 
 	const firingTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}} - {{ .Alert.Annotations.description}}"
 	const resolvedTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}}"
@@ -145,7 +152,7 @@ func (m PrometheusModule) getHandler(c *viper.Viper) http.HandlerFunc {
 
 			for _, alert := range alertList {
 				name := alert.Labels["instance"].(string)
-				name = shortenInstanceName(name, c.GetString("hostname_filter"))
+				name = shortenInstanceName(name, m.hostnameFilter)
 				value, ok := alert.Annotations["value"].(string)
 				if ok {
 					inst = instance{Name: name, Value: value}
@@ -177,7 +184,7 @@ func (m PrometheusModule) getHandler(c *viper.Viper) http.HandlerFunc {
 				buf.Reset()
 				_ = hostListTemplate.Execute(&buf, &instanceList)
 				event.Messages = append(event.Messages, buf.String())
-				event.Channel = c.GetString("channel")
+				event.Channel = m.defaultChannel
 				messageChannel <- event
 			}
 		}

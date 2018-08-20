@@ -7,19 +7,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-type SimpleModule struct{}
+type SimpleModule struct {
+	defaultChannel string
+}
+
+func (m SimpleModule) init(c *viper.Viper) {
+	m.defaultChannel = c.GetString("default_channel")
+}
 
 func (m SimpleModule) getChannelList() []string {
-	return nil
+	return []string{m.defaultChannel}
 }
 
 func (m SimpleModule) getEndpoint() string {
 	return "/simple"
 }
 
-func (m SimpleModule) getHandler(c *viper.Viper) http.HandlerFunc {
-
-	defaultChannel := c.GetString("default_channel")
+func (m SimpleModule) getHandler() http.HandlerFunc {
 
 	return func(wr http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -29,7 +33,7 @@ func (m SimpleModule) getHandler(c *viper.Viper) http.HandlerFunc {
 		// Get channel to send to
 		channel := query.Get("channel")
 		if channel == "" {
-			channel = defaultChannel
+			channel = m.defaultChannel
 		}
 
 		// Split body into lines
