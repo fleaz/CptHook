@@ -31,7 +31,9 @@ func TestPrometheusHandler(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(prometheusHandler(viper.Sub("modules.prometheus")))
+	var prometheusModule Module = PrometheusModule{}
+	prometheusModule.init(viper.Sub("modules.prometheus"))
+	handler := http.HandlerFunc(prometheusModule.getHandler())
 
 	handler.ServeHTTP(rr, req)
 

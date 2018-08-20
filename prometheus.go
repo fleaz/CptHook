@@ -13,14 +13,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Alert struct {
+type PrometheusModule struct {
+	defaultChannel string
+	hostnameFilter string
+}
+
+type alert struct {
 	Labels      map[string]interface{} `json:"labels"`
 	Annotations map[string]interface{} `json:"annotations"`
 	StartsAt    string                 `json:"startsAt"`
 	EndsAt      string                 `json:"endsAt"`
 }
 
-type Notification struct {
+type notification struct {
 	Version           string                 `json:"version"`
 	GroupKey          string                 `json:"groupKey"`
 	Status            string                 `json:"status"`
@@ -29,24 +34,24 @@ type Notification struct {
 	CommonLabels      map[string]interface{} `json:"commonLabels"`
 	CommonAnnotations map[string]interface{} `json:"commonAnnotations"`
 	ExternalURL       string                 `json:"externalURL"`
-	Alerts            []Alert                `json:"alerts"`
+	Alerts            []alert                `json:"alerts"`
 }
 
-type NotificationContext struct {
-	Alert         *Alert
-	Notification  *Notification
+type notificationContext struct {
+	Alert         *alert
+	Notification  *notification
 	InstanceCount int
 	Status        string
 	ColorStart    string
 	ColorEnd      string
 }
 
-type Instance struct {
+type instance struct {
 	Name  string
 	Value string
 }
 
-func SortAlerts(alerts []Alert) (firing, resolved []Alert) {
+func sortAlerts(alerts []alert) (firing, resolved []alert) {
 	for _, alert := range alerts {
 		tStart, _ := time.Parse(time.RFC3339, alert.StartsAt)
 		tEnd, _ := time.Parse(time.RFC3339, alert.EndsAt)
@@ -75,12 +80,24 @@ func shortenInstanceName(name string, pattern string) string {
 	match := r.FindStringSubmatch(name)
 	if len(match) > 1 {
 		return match[1]
-	} else {
-		return name
 	}
+	return name
 }
 
-func prometheusHandler(c *viper.Viper) http.HandlerFunc {
+func (m PrometheusModule) getEndpoint() string {
+	return "/prometheus"
+}
+
+func (m PrometheusModule) getChannelList() []string {
+	return []string{m.defaultChannel}
+}
+
+func (m PrometheusModule) init(c *viper.Viper) {
+	m.defaultChannel = c.GetString("channel")
+	m.hostnameFilter = c.GetString("hostname_filter")
+}
+
+func (m PrometheusModule) getHandler() http.HandlerFunc {
 
 	const firingTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}} - {{ .Alert.Annotations.description}}"
 	const resolvedTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}}"
@@ -106,25 +123,25 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 		defer r.Body.Close()
 		decoder := json.NewDecoder(r.Body)
 
-		var notification Notification
+		var n notification
 
-		if err := decoder.Decode(&notification); err != nil {
+		if err := decoder.Decode(&n); err != nil {
 			log.Println(err)
 			return
 		}
 
-		_, err := json.Marshal(&notification)
+		_, err := json.Marshal(&n)
 
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		var sortedAlerts = make(map[string][]Alert)
-		sortedAlerts["firing"], sortedAlerts["resolved"] = SortAlerts(notification.Alerts)
+		var sortedAlerts = make(map[string][]alert)
+		sortedAlerts["firing"], sortedAlerts["resolved"] = sortAlerts(n.Alerts)
 
-		var instance Instance
-		var instanceList []Instance
+		var inst instance
+		var instanceList []instance
 		var buf bytes.Buffer
 
 		for alertStatus, alertList := range sortedAlerts {
@@ -135,19 +152,19 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 
 			for _, alert := range alertList {
 				name := alert.Labels["instance"].(string)
-				name = shortenInstanceName(name, c.GetString("hostname_filter"))
+				name = shortenInstanceName(name, m.hostnameFilter)
 				value, ok := alert.Annotations["value"].(string)
 				if ok {
-					instance = Instance{Name: name, Value: value}
+					inst = instance{Name: name, Value: value}
 				} else {
-					instance = Instance{Name: name}
+					inst = instance{Name: name}
 				}
-				instanceList = append(instanceList, instance)
+				instanceList = append(instanceList, inst)
 			}
 
-			context := NotificationContext{
-				Alert:         &notification.Alerts[0],
-				Notification:  &notification,
+			context := notificationContext{
+				Alert:         &n.Alerts[0],
+				Notification:  &n,
 				Status:        strings.ToUpper(alertStatus),
 				InstanceCount: len(instanceList),
 				ColorStart:    getColorcode(alertStatus),
@@ -167,7 +184,7 @@ func prometheusHandler(c *viper.Viper) http.HandlerFunc {
 				buf.Reset()
 				_ = hostListTemplate.Execute(&buf, &instanceList)
 				event.Messages = append(event.Messages, buf.String())
-				event.Channel = c.GetString("channel")
+				event.Channel = m.defaultChannel
 				messageChannel <- event
 			}
 		}

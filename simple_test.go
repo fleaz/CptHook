@@ -6,8 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/spf13/viper"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 func TestSimpleHandler(t *testing.T) {
@@ -26,7 +27,9 @@ func TestSimpleHandler(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(simpleHandler(viper.Sub("modules.simple")))
+	var simpleModule Module = SimpleModule{}
+	simpleModule.init(viper.Sub("modules.simple"))
+	handler := http.HandlerFunc(simpleModule.getHandler())
 
 	handler.ServeHTTP(rr, req)
 

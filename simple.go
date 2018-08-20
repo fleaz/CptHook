@@ -1,14 +1,29 @@
 package main
 
 import (
-	"net/http"
-	"github.com/spf13/viper"
 	"bufio"
+	"net/http"
+
+	"github.com/spf13/viper"
 )
 
-func simpleHandler(c *viper.Viper) http.HandlerFunc {
+type SimpleModule struct {
+	defaultChannel string
+}
 
-	defaultChannel := c.GetString("default_channel")
+func (m SimpleModule) init(c *viper.Viper) {
+	m.defaultChannel = c.GetString("default_channel")
+}
+
+func (m SimpleModule) getChannelList() []string {
+	return []string{m.defaultChannel}
+}
+
+func (m SimpleModule) getEndpoint() string {
+	return "/simple"
+}
+
+func (m SimpleModule) getHandler() http.HandlerFunc {
 
 	return func(wr http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -18,7 +33,7 @@ func simpleHandler(c *viper.Viper) http.HandlerFunc {
 		// Get channel to send to
 		channel := query.Get("channel")
 		if channel == "" {
-			channel = defaultChannel
+			channel = m.defaultChannel
 		}
 
 		// Split body into lines

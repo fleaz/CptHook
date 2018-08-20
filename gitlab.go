@@ -13,7 +13,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Mapping struct {
+type GitlabModule struct {
+	channelMapping mapping
+}
+
+type mapping struct {
 	DefaultChannel   string              `mapstructure:"default"`
 	GroupMappings    map[string][]string `mapstructure:"groups"`
 	ExplicitMappings map[string][]string `mapstructure:"explicit"`
@@ -28,20 +32,20 @@ func contains(mapping map[string][]string, entry string) bool {
 	return false
 }
 
-func sendMessage(message string, projectName string, namespace string, channelMapping Mapping) {
+func (m GitlabModule) sendMessage(message string, projectName string, namespace string) {
 	var channelNames []string
-	var full_projectName = namespace + "/" + projectName
+	var fullProjectName = namespace + "/" + projectName
 
-	if contains(channelMapping.ExplicitMappings, full_projectName) { // Check if explizit mapping exists
-		for _, channelName := range channelMapping.ExplicitMappings[full_projectName] {
+	if contains(m.channelMapping.ExplicitMappings, fullProjectName) { // Check if explizit mapping exists
+		for _, channelName := range m.channelMapping.ExplicitMappings[fullProjectName] {
 			channelNames = append(channelNames, channelName)
 		}
-	} else if contains(channelMapping.GroupMappings, namespace) { // Check if group mapping exists
-		for _, channelName := range channelMapping.GroupMappings[namespace] {
+	} else if contains(m.channelMapping.GroupMappings, namespace) { // Check if group mapping exists
+		for _, channelName := range m.channelMapping.GroupMappings[namespace] {
 			channelNames = append(channelNames, channelName)
 		}
 	} else { // Fall back to default channel
-		channelNames = append(channelNames, channelMapping.DefaultChannel)
+		channelNames = append(channelNames, m.channelMapping.DefaultChannel)
 	}
 
 	for _, channelName := range channelNames {
@@ -53,7 +57,36 @@ func sendMessage(message string, projectName string, namespace string, channelMa
 
 }
 
-func gitlabHandler(c *viper.Viper) http.HandlerFunc {
+func (m GitlabModule) init(c *viper.Viper) {
+	err := c.Unmarshal(&m.channelMapping)
+	if err != nil {
+		log.Fatal("Failed to unmarshal channelmapping into struct")
+	}
+}
+
+func (m GitlabModule) getChannelList() []string {
+	var all []string
+
+	for _, v := range m.channelMapping.ExplicitMappings {
+		for _, name := range v {
+			all = append(all, name)
+		}
+	}
+	for _, v := range m.channelMapping.ExplicitMappings {
+		for _, name := range v {
+			all = append(all, name)
+		}
+	}
+	all = append(all, m.channelMapping.DefaultChannel)
+
+	return all
+}
+
+func (m GitlabModule) getEndpoint() string {
+	return "/gitlab"
+}
+
+func (m GitlabModule) getHandler() http.HandlerFunc {
 
 	const pushCompareString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/compare/{{ .BeforeCommit }}...{{ .AfterCommit }}"
 	const pushCommitLogString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/commits/{{ .Branch }}"
@@ -62,9 +95,9 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 	const commitString = "\x0315{{ .ShortID }}\x03 (\x0303+{{ .AddedFiles }}\x03|\x0308±{{ .ModifiedFiles }}\x03|\x0304-{{ .RemovedFiles }}\x03) \x0306{{ .Author.Name }}\x03: {{ .Message }}"
 	const issueString = "[\x0312{{ .Project.Name }}\x03] {{ .User.Name }} {{ .Issue.Action }} issue \x0308#{{ .Issue.Iid }}\x03: {{ .Issue.Title }} {{ .Issue.URL }}"
 	const mergeString = "[\x0312{{ .Project.Name }}\x03] {{ .User.Name }} {{ .Merge.Action }} merge request \x0308#{{ .Merge.Iid }}\x03: {{ .Merge.Title }} {{ .Merge.URL }}"
-	const pipelineCreateString = "[\x0312{{ .Project.Name }}\x03] Pipeline for commit {{ .Pipeline.Commit }} {{ .Pipeline.Status }} {{ .Project.WebURL }}/pipelines/{{ .Pipeline.Id }}"
-	const pipelineCompleteString = "[\x0312{{ .Project.Name }}\x03] Pipeline for commit {{ .Pipeline.Commit }} {{ .Pipeline.Status }} in {{ .Pipeline.Duration }} seconds {{ .Project.WebURL }}/pipelines/{{ .Pipeline.Id }}"
-	const jobCompleteString = "[\x0312{{ .Repository.Name }}\x03] Job \x0308{{ .Name }}\x03 for commit {{ .Commit }} {{ .Status }} in {{ .Duration }} seconds {{ .Repository.Homepage }}/-/jobs/{{ .Id }}"
+	const pipelineCreateString = "[\x0312{{ .Project.Name }}\x03] Pipeline for commit {{ .Pipeline.Commit }} {{ .Pipeline.Status }} {{ .Project.WebURL }}/pipelines/{{ .Pipeline.ID }}"
+	const pipelineCompleteString = "[\x0312{{ .Project.Name }}\x03] Pipeline for commit {{ .Pipeline.Commit }} {{ .Pipeline.Status }} in {{ .Pipeline.Duration }} seconds {{ .Project.WebURL }}/pipelines/{{ .Pipeline.ID }}"
+	const jobCompleteString = "[\x0312{{ .Repository.Name }}\x03] Job \x0308{{ .Name }}\x03 for commit {{ .Commit }} {{ .Status }} in {{ .Duration }} seconds {{ .Repository.Homepage }}/-/jobs/{{ .ID }}"
 
 	JobStatus := map[string]string{
 		"pending": "is \x0315pending\x03",
@@ -80,12 +113,6 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 		"close":  "closed",
 		"reopen": "reopened",
 		"merge":  "merged",
-	}
-
-	channelMapping := Mapping{}
-	err := c.Unmarshal(&channelMapping)
-	if err != nil {
-		log.Fatal("Failed to unmarshal channelmapping into struct")
 	}
 
 	const NullCommit = "0000000000000000000000000000000000000000"
@@ -169,7 +196,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 		}
 
 		type Commit struct {
-			Id       string   `json:"id"`
+			ID       string   `json:"id"`
 			Message  string   `json:"message"`
 			Added    []string `json:"added"`
 			Modified []string `json:"modified"`
@@ -207,7 +234,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 		}
 
 		type Pipeline struct {
-			Id       int     `json:"id"`
+			ID       int     `json:"id"`
 			Commit   string  `json:"sha"`
 			Status   string  `json:"status"`
 			Duration float64 `json:"duration"`
@@ -225,7 +252,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 		}
 
 		type JobEvent struct {
-			Id         int        `json:"build_id"`
+			ID         int        `json:"build_id"`
 			Name       string     `json:"build_name"`
 			Status     string     `json:"build_status"`
 			Duration   float64    `json:"build_duration"`
@@ -259,14 +286,14 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
 				err = pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
-				sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace, channelMapping)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace)
 
 			} else if pipelineEvent.Pipeline.Status == "success" || pipelineEvent.Pipeline.Status == "failed" {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
 				err = pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
-				sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace, channelMapping)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace)
 			}
 
 		case "Job Hook":
@@ -292,7 +319,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 			jobEvent.Status = JobStatus[jobEvent.Status]
 
 			err = jobCompleteTemplate.Execute(&buf, &jobEvent)
-			sendMessage(buf.String(), jobEvent.Repository.Name, namespace, channelMapping)
+			m.sendMessage(buf.String(), jobEvent.Repository.Name, namespace)
 
 		case "Merge Request Hook", "Merge Request Event":
 			log.Printf("Got Hook for a Merge Request")
@@ -306,7 +333,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 
 			err = mergeTemplate.Execute(&buf, &mergeEvent)
 
-			sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.Namespace, channelMapping)
+			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.Namespace)
 
 		case "Issue Hook", "Issue Event":
 			log.Printf("Got Hook for an Issue")
@@ -320,7 +347,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 
 			err = issueTemplate.Execute(&buf, &issueEvent)
 
-			sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.Namespace, channelMapping)
+			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.Namespace)
 
 		case "Push Hook", "Push Event":
 			log.Printf("Got Hook for a Push Event")
@@ -336,13 +363,13 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 				// Branch was deleted
 				var buf bytes.Buffer
 				err = branchDeleteTemplate.Execute(&buf, &pushEvent)
-				sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace, channelMapping)
+				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
 			} else {
 				if pushEvent.BeforeCommit == NullCommit {
 					// Branch was created
 					var buf bytes.Buffer
 					err = branchCreateTemplate.Execute(&buf, &pushEvent)
-					sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace, channelMapping)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
 				}
 
 				if pushEvent.TotalCommits > 0 {
@@ -356,7 +383,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 						err = pushCompareTemplate.Execute(&buf, &pushEvent)
 					}
 
-					sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace, channelMapping)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
 
 					// Limit number of commit meessages to 3
 					if pushEvent.TotalCommits > 3 {
@@ -374,7 +401,7 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 						}
 
 						context := CommitContext{
-							ShortID:       commit.Id[0:7],
+							ShortID:       commit.ID[0:7],
 							Message:       html.UnescapeString(commit.Message),
 							Author:        commit.Author,
 							AddedFiles:    len(commit.Added),
@@ -389,12 +416,12 @@ func gitlabHandler(c *viper.Viper) http.HandlerFunc {
 							log.Printf("ERROR: %v", err)
 							return
 						}
-						sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace, channelMapping)
+						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
 					}
 
 					if pushEvent.TotalCommits > 3 {
 						var message = fmt.Sprintf("and %d more commits.", pushEvent.TotalCommits-3)
-						sendMessage(message, pushEvent.Project.Name, pushEvent.Project.Namespace, channelMapping)
+						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.Namespace)
 					}
 				}
 			}
