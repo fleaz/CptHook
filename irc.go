@@ -14,7 +14,7 @@ import (
 
 var client *girc.Client
 
-func ircConnection(config *viper.Viper) {
+func ircConnection(config *viper.Viper, channelList []string) {
 	clientConfig := girc.Config{
 		Server: config.GetString("host"),
 		Port:   config.GetInt("port"),
@@ -79,7 +79,9 @@ func ircConnection(config *viper.Viper) {
 	client = girc.New(clientConfig)
 
 	client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
-		c.Cmd.Whois(clientConfig.Nick)
+		for _, name := range channelList {
+			joinChannel(name)
+		}
 	})
 
 	// Start thread to process message queue
@@ -109,6 +111,6 @@ func joinChannel(newChannel string) {
 			return
 		}
 	}
-	fmt.Printf("Need to join new channel %s\n", newChannel)
+	fmt.Printf("Need to join new channel %q\n", newChannel)
 	client.Cmd.Join(newChannel)
 }

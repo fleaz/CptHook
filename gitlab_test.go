@@ -33,7 +33,8 @@ func TestGitlabHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var gitlabModule Module = GitlabModule{}
-	handler := http.HandlerFunc(gitlabModule.getHandler(viper.Sub("modules.gitlab")))
+	gitlabModule.init(viper.Sub("modules.gitlab"))
+	handler := http.HandlerFunc(gitlabModule.getHandler())
 
 	handler.ServeHTTP(rr, req)
 

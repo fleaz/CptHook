@@ -57,15 +57,36 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 
 }
 
+func (m GitlabModule) init(c *viper.Viper) {
+	err := c.Unmarshal(&m.channelMapping)
+	if err != nil {
+		log.Fatal("Failed to unmarshal channelmapping into struct")
+	}
+}
+
 func (m GitlabModule) getChannelList() []string {
-	return nil
+	var all []string
+
+	for _, v := range m.channelMapping.ExplicitMappings {
+		for _, name := range v {
+			all = append(all, name)
+		}
+	}
+	for _, v := range m.channelMapping.ExplicitMappings {
+		for _, name := range v {
+			all = append(all, name)
+		}
+	}
+	all = append(all, m.channelMapping.DefaultChannel)
+
+	return all
 }
 
 func (m GitlabModule) getEndpoint() string {
 	return "/gitlab"
 }
 
-func (m GitlabModule) getHandler(c *viper.Viper) http.HandlerFunc {
+func (m GitlabModule) getHandler() http.HandlerFunc {
 
 	const pushCompareString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/compare/{{ .BeforeCommit }}...{{ .AfterCommit }}"
 	const pushCommitLogString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/commits/{{ .Branch }}"
@@ -92,11 +113,6 @@ func (m GitlabModule) getHandler(c *viper.Viper) http.HandlerFunc {
 		"close":  "closed",
 		"reopen": "reopened",
 		"merge":  "merged",
-	}
-
-	err := c.Unmarshal(&m.channelMapping)
-	if err != nil {
-		log.Fatal("Failed to unmarshal channelmapping into struct")
 	}
 
 	const NullCommit = "0000000000000000000000000000000000000000"
