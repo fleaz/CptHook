@@ -83,6 +83,15 @@ func main() {
 		http.HandleFunc(simpleModule.getEndpoint(), simpleModule.getHandler())
 	}
 
+	// TravisCI module
+	if moduleList.GetBool("travis.enabled") {
+		log.Println("TravisCI module is active")
+		var travisModule Module = &TravisModule{}
+		travisModule.init(viper.Sub("modules.travis"))
+		channelList = append(channelList, travisModule.getChannelList()...)
+		http.HandleFunc(travisModule.getEndpoint(), travisModule.getHandler())
+	}
+
 	// Start IRC connection
 	go ircConnection(viper.Sub("irc"), channelList)
 
