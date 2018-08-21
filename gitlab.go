@@ -72,7 +72,7 @@ func (m GitlabModule) getChannelList() []string {
 			all = append(all, name)
 		}
 	}
-	for _, v := range m.channelMapping.ExplicitMappings {
+	for _, v := range m.channelMapping.GroupMappings {
 		for _, name := range v {
 			all = append(all, name)
 		}
