@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html"
-	"html/template"
 	"log"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/viper"
 )
@@ -402,7 +401,7 @@ func (m GitlabModule) getHandler() http.HandlerFunc {
 
 						context := CommitContext{
 							ShortID:       commit.ID[0:7],
-							Message:       html.UnescapeString(commit.Message),
+							Message:       commit.Message,
 							Author:        commit.Author,
 							AddedFiles:    len(commit.Added),
 							ModifiedFiles: len(commit.Modified),
