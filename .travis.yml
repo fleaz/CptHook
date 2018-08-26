@@ -16,16 +16,23 @@ before_install:
   - dep ensure
 
 script:
+  - set -eu
   - cp cpthook.yml.example cpthook.yml
   - go test
   - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o CptHook
+  - docker build -f Dockerfile -t $IMAGE .
 
 deploy:
   - provider: script
     skip_cleanup: true
-    script: bash scripts/deploy.sh
+    script: bash scripts/deploy.sh stable
     on:
       branch: master
+  - provider: script
+    skip_cleanup: true
+    script: bash scripts/deploy.sh development
+    on:
+      branch: development
 
 notifications:
   webhooks:
