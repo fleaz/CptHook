@@ -56,7 +56,7 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 
 }
 
-func (m GitlabModule) init(c *viper.Viper) {
+func (m *GitlabModule) init(c *viper.Viper) {
 	err := c.Unmarshal(&m.channelMapping)
 	if err != nil {
 		log.Fatal("Failed to unmarshal channelmapping into struct")

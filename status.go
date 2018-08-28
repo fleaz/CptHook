@@ -10,7 +10,7 @@ import (
 
 type StatusModule struct{}
 
-func (m StatusModule) init(c *viper.Viper) {}
+func (m *StatusModule) init(c *viper.Viper) {}
 
 func (m StatusModule) getEndpoint() string {
 	return "/status"
