@@ -11,7 +11,7 @@ type SimpleModule struct {
 	defaultChannel string
 }
 
-func (m SimpleModule) init(c *viper.Viper) {
+func (m *SimpleModule) init(c *viper.Viper) {
 	m.defaultChannel = c.GetString("default_channel")
 }
 
