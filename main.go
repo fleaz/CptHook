@@ -50,7 +50,7 @@ func main() {
 	// Status module
 	if moduleList.GetBool("status.enabled") {
 		log.Println("Status module is active")
-		var statusModule Module = StatusModule{}
+		var statusModule Module = &StatusModule{}
 		statusModule.init(viper.Sub("modules.status"))
 		channelList = append(channelList, statusModule.getChannelList()...)
 		http.HandleFunc(statusModule.getEndpoint(), statusModule.getHandler())
@@ -59,7 +59,7 @@ func main() {
 	// Prometheus module
 	if moduleList.GetBool("prometheus.enabled") {
 		log.Println("Prometheus module is active")
-		var prometheusModule Module = PrometheusModule{}
+		var prometheusModule Module = &PrometheusModule{}
 		prometheusModule.init(viper.Sub("modules.prometheus"))
 		channelList = append(channelList, prometheusModule.getChannelList()...)
 		http.HandleFunc(prometheusModule.getEndpoint(), prometheusModule.getHandler())
@@ -68,7 +68,7 @@ func main() {
 	// Gitlab module
 	if moduleList.GetBool("gitlab.enabled") {
 		log.Println("Gitlab module is active")
-		var gitlabModule Module = GitlabModule{}
+		var gitlabModule Module = &GitlabModule{}
 		gitlabModule.init(viper.Sub("modules.gitlab"))
 		channelList = append(channelList, gitlabModule.getChannelList()...)
 		http.HandleFunc(gitlabModule.getEndpoint(), gitlabModule.getHandler())
@@ -77,7 +77,7 @@ func main() {
 	// Simple module
 	if moduleList.GetBool("simple.enabled") {
 		log.Println("Simple module is active")
-		var simpleModule Module = SimpleModule{}
+		var simpleModule Module = &SimpleModule{}
 		simpleModule.init(viper.Sub("modules.simple"))
 		channelList = append(channelList, simpleModule.getChannelList()...)
 		http.HandleFunc(simpleModule.getEndpoint(), simpleModule.getHandler())

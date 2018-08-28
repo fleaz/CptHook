@@ -92,7 +92,7 @@ func (m PrometheusModule) getChannelList() []string {
 	return []string{m.defaultChannel}
 }
 
-func (m PrometheusModule) init(c *viper.Viper) {
+func (m *PrometheusModule) init(c *viper.Viper) {
 	m.defaultChannel = c.GetString("channel")
 	m.hostnameFilter = c.GetString("hostname_filter")
 }
