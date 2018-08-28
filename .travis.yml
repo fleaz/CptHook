@@ -36,3 +36,4 @@ deploy:
 notifications:
   webhooks:
     - http://webhooks.rainbownerds.de:12345
+  email: false
