@@ -16,7 +16,7 @@ before_install:
   - dep ensure
 
 script:
-  - cp cpthoooook.yml.example cpthook.yml
+  - cp cpthook.yml.example cpthook.yml
   - go test
   - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o CptHook
   - docker build -f Dockerfile -t $IMAGE .
