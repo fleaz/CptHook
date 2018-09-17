@@ -22,16 +22,25 @@ script:
   - docker build -f Dockerfile -t $IMAGE .
 
 deploy:
+# Build production Docker container
   - provider: script
     skip_cleanup: true
     script: bash scripts/deploy.sh stable
     on:
       branch: master
+# Build development Docker container
   - provider: script
     skip_cleanup: true
     script: bash scripts/deploy.sh development
     on:
       branch: development
+# Build release files with goreleaser
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL https://git.io/goreleaser | bash
+    on:
+      tags: true
+      condition: $TRAVIS_OS_NAME = linux
 
 notifications:
   webhooks:
