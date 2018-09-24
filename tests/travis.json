@@ -1,0 +1,135 @@
+{
+	"id": 424117112,
+	"number": "53",
+	"config": {
+		"go": ["1.10"],
+		"os": "linux",
+		"dist": "trusty",
+		"group": "stable",
+		"deploy": [{
+			"true": {
+				"branch": "master"
+			},
+			"script": "bash scripts/deploy.sh stable",
+			"provider": "script",
+			"skip_cleanup": true
+		}, {
+			"true": {
+				"branch": "development"
+			},
+			"script": "bash scripts/deploy.sh development",
+			"provider": "script",
+			"skip_cleanup": true
+		}],
+		"script": ["cp cpthoooook.yml.example cpthook.yml", "go test", "CGO_ENABLED=\"0\" GOARCH=\"amd64\" GOOS=\"linux\" go build -a -installsuffix cgo -o CptHook", "docker build -f Dockerfile -t $IMAGE ."],
+		".result": "configured",
+		"language": "go",
+		"services": ["docker"],
+		"global_env": ["IMAGE=\"fleaz/cpthook\"", "COMMIT=${TRAVIS_COMMIT::8}"],
+		"notifications": {
+			"email": false,
+			"webhooks": {
+				"urls": ["http://webhooks.rainbownerds.de:12345"],
+				"on_error": "always",
+				"on_start": "always",
+				"on_cancel": "always",
+				"on_failure": "always",
+				"on_success": "always"
+			}
+		},
+		"before_install": ["curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh", "dep ensure"]
+	},
+	"type": "push",
+	"state": "failed",
+	"status": 1,
+	"result": 1,
+	"status_message": "Broken",
+	"result_message": "Broken",
+	"started_at": "2018-09-03T23:19:43Z",
+	"finished_at": "2018-09-03T23:21:05Z",
+	"duration": 82,
+	"build_url": "https://travis-ci.org/f-breidenstein/CptHook/builds/424117112",
+	"commit_id": 127485337,
+	"commit": "6f6b61831f8936815c575882d208e90b013f1956",
+	"base_commit": "6f6b61831f8936815c575882d208e90b013f1956",
+	"head_commit": null,
+	"branch": "development",
+	"message": "Breaking travis on purpose to get a failing webhook for development",
+	"compare_url": "https://github.com/f-breidenstein/CptHook/compare/9858816950bf...6f6b61831f89",
+	"committed_at": "2018-09-03T23:17:35Z",
+	"author_name": "Felix Breidenstein",
+	"author_email": "mail@felixbreidenstein.de",
+	"committer_name": "Felix Breidenstein",
+	"committer_email": "mail@felixbreidenstein.de",
+	"pull_request": false,
+	"pull_request_number": null,
+	"pull_request_title": null,
+	"tag": null,
+	"repository": {
+		"id": 18138812,
+		"name": "CptHook",
+		"owner_name": "f-breidenstein",
+		"url": null
+	},
+	"matrix": [{
+		"id": 424117113,
+		"repository_id": 18138812,
+		"parent_id": 424117112,
+		"number": "53.1",
+		"state": "failed",
+		"config": {
+			"go": "1.10",
+			"os": "linux",
+			"dist": "trusty",
+			"group": "stable",
+			"addons": {
+				"deploy": [{
+					"true": {
+						"branch": "master"
+					},
+					"script": "bash scripts/deploy.sh stable",
+					"provider": "script",
+					"skip_cleanup": true
+				}, {
+					"true": {
+						"branch": "development"
+					},
+					"script": "bash scripts/deploy.sh development",
+					"provider": "script",
+					"skip_cleanup": true
+				}]
+			},
+			"script": ["cp cpthoooook.yml.example cpthook.yml", "go test", "CGO_ENABLED=\"0\" GOARCH=\"amd64\" GOOS=\"linux\" go build -a -installsuffix cgo -o CptHook", "docker build -f Dockerfile -t $IMAGE ."],
+			".result": "configured",
+			"language": "go",
+			"services": ["docker"],
+			"global_env": ["IMAGE=\"fleaz/cpthook\"", "COMMIT=${TRAVIS_COMMIT::8}"],
+			"notifications": {
+				"email": false,
+				"webhooks": {
+					"urls": ["http://webhooks.rainbownerds.de:12345"],
+					"on_error": "always",
+					"on_start": "always",
+					"on_cancel": "always",
+					"on_failure": "always",
+					"on_success": "always"
+				}
+			},
+			"before_install": ["curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh", "dep ensure"]
+		},
+		"status": 1,
+		"result": 1,
+		"commit": "6f6b61831f8936815c575882d208e90b013f1956",
+		"branch": "development",
+		"message": "Breaking travis on purpose to get a failing webhook for development",
+		"compare_url": "https://github.com/f-breidenstein/CptHook/compare/9858816950bf...6f6b61831f89",
+		"started_at": "2018-09-03T23:19:43Z",
+		"finished_at": "2018-09-03T23:21:05Z",
+		"committed_at": "2018-09-03T23:17:35Z",
+		"author_name": "Felix Breidenstein",
+		"author_email": "mail@felixbreidenstein.de",
+		"committer_name": "Felix Breidenstein",
+		"committer_email": "mail@felixbreidenstein.de",
+		"allow_failure": false
+	}]
+}
