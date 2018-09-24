@@ -2,8 +2,9 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -22,7 +23,7 @@ func (m StatusModule) getChannelList() []string {
 
 func (m StatusModule) getHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got http event for /status")
+		log.Debug("Got a request for the StatusModule")
 		t, _ := template.ParseFiles("templates/status.html")
 		t.Execute(w, nil)
 	}

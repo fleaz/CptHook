@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/spf13/viper"
 )
 
@@ -26,6 +28,7 @@ func (m SimpleModule) getEndpoint() string {
 func (m SimpleModule) getHandler() http.HandlerFunc {
 
 	return func(wr http.ResponseWriter, req *http.Request) {
+		log.Debug("Got a request for the SimpleModule")
 		defer req.Body.Close()
 
 		query := req.URL.Query()

@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
 	"net/http"
 	"path"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -27,6 +27,24 @@ type Module interface {
 
 var messageChannel = make(chan IRCMessage, 10)
 
+func configureLogLevel() {
+	if l := viper.GetString("logging.level"); l != "" {
+		level, err := log.ParseLevel(l)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"level": l,
+			}).Fatal("Uknown loglevel defined in configuration.")
+		}
+		log.WithFields(log.Fields{
+			"level": level,
+		}).Info("Setting loglevel defined by configuration")
+		log.SetLevel(level)
+		return
+	}
+	log.Info("Loglevel not defined in configuration. Defaulting to ERROR")
+	log.SetLevel(log.ErrorLevel)
+}
+
 func main() {
 	confDirPtr := flag.String("config", "/etc/cpthook.yml", "Path to the configfile")
 	flag.Parse()
@@ -41,15 +59,17 @@ func main() {
 	}
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
+		log.Fatal(err)
 	}
+
+	configureLogLevel()
 
 	var moduleList = viper.Sub("modules")
 	var channelList = []string{}
 
 	// Status module
 	if moduleList.GetBool("status.enabled") {
-		log.Println("Status module is active")
+		log.Info("Status module is active")
 		var statusModule Module = &StatusModule{}
 		statusModule.init(viper.Sub("modules.status"))
 		channelList = append(channelList, statusModule.getChannelList()...)
@@ -58,7 +78,7 @@ func main() {
 
 	// Prometheus module
 	if moduleList.GetBool("prometheus.enabled") {
-		log.Println("Prometheus module is active")
+		log.Info("Prometheus module is active")
 		var prometheusModule Module = &PrometheusModule{}
 		prometheusModule.init(viper.Sub("modules.prometheus"))
 		channelList = append(channelList, prometheusModule.getChannelList()...)
@@ -67,7 +87,7 @@ func main() {
 
 	// Gitlab module
 	if moduleList.GetBool("gitlab.enabled") {
-		log.Println("Gitlab module is active")
+		log.Info("Gitlab module is active")
 		var gitlabModule Module = &GitlabModule{}
 		gitlabModule.init(viper.Sub("modules.gitlab"))
 		channelList = append(channelList, gitlabModule.getChannelList()...)
@@ -76,7 +96,7 @@ func main() {
 
 	// Simple module
 	if moduleList.GetBool("simple.enabled") {
-		log.Println("Simple module is active")
+		log.Info("Simple module is active")
 		var simpleModule Module = &SimpleModule{}
 		simpleModule.init(viper.Sub("modules.simple"))
 		channelList = append(channelList, simpleModule.getChannelList()...)
@@ -87,6 +107,9 @@ func main() {
 	go ircConnection(viper.Sub("irc"), channelList)
 
 	// Start HTTP server
+	log.WithFields(log.Fields{
+		"listen": viper.GetString("http.listen"),
+	}).Info("Started HTTP Server")
 	log.Fatal(http.ListenAndServe(viper.GetString("http.listen"), nil))
 
 }

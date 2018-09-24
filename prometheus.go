@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"text/template"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -119,7 +120,7 @@ func (m PrometheusModule) getHandler() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got http event for /prometheus")
+		log.Debug("Got a request for the PrometheusModule")
 		defer r.Body.Close()
 		decoder := json.NewDecoder(r.Body)
 

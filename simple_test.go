@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"strings"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -16,7 +16,7 @@ func TestSimpleHandler(t *testing.T) {
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+		log.Fatal(err)
 	}
 
 	body := strings.NewReader("Hello, World!")
