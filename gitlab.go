@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"text/template"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -167,6 +168,7 @@ func (m GitlabModule) getHandler() http.HandlerFunc {
 	}
 
 	return func(wr http.ResponseWriter, req *http.Request) {
+		log.Debug("Got a request for the GitlabModule")
 		defer req.Body.Close()
 		decoder := json.NewDecoder(req.Body)
 

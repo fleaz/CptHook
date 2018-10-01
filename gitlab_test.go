@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -15,13 +16,12 @@ func TestGitlabHandler(t *testing.T) {
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+		log.Panic(err)
 	}
 
 	file, e := os.Open("./tests/gitlab.json")
 	if e != nil {
-		fmt.Printf("File error: %v\n", e)
-		os.Exit(1)
+		log.Fatal(e)
 	}
 
 	req, err := http.NewRequest("POST", "/", file)
