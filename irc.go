@@ -101,7 +101,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 func channelReceiver() {
 	log.Info("ChannelReceiver started")
 
-	for elem := range messageChannel {
+	for elem := range inputChannel {
 		log.Debug("Took IRC event out of channel.")
 		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
@@ -116,8 +116,10 @@ func joinChannel(newChannel string) {
 			return
 		}
 	}
+
 	log.WithFields(log.Fields{
 		"channel": newChannel,
-	}).Debug("Need to join new channel %q\n", newChannel)
+	}).Debug("Need to join new channel")
+
 	client.Cmd.Join(newChannel)
 }

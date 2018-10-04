@@ -16,6 +16,7 @@ cpthook.yml
 .idea/
 *.crt
 vendor/
+.vendor-new/
 
 # Binarys
 CptHook

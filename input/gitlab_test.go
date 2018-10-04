@@ -1,4 +1,4 @@
-package main
+package input
 
 import (
 	"net/http"
@@ -11,29 +11,30 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestPrometheusHandler(t *testing.T) {
+func TestGitlabHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
-	file, e := os.Open("./tests/prometheus.json")
+	file, e := os.Open("./tests/gitlab.json")
 	if e != nil {
 		log.Fatal(e)
 	}
 
 	req, err := http.NewRequest("POST", "/", file)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Gitlab-Event", "Push Hook")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
-	var prometheusModule Module = &PrometheusModule{}
-	prometheusModule.init(viper.Sub("modules.prometheus"))
-	handler := http.HandlerFunc(prometheusModule.getHandler())
+	var gitlabModule Module = &GitlabModule{}
+	gitlabModule.init(viper.Sub("modules.gitlab"), nil)
+	handler := http.HandlerFunc(gitlabModule.getHandler())
 
 	handler.ServeHTTP(rr, req)
 

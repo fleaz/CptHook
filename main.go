@@ -2,30 +2,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"path"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/fleaz/CptHook/input"
 	"github.com/spf13/viper"
 )
 
-// IRCMessage are send over the messageChannel from the different modules
-type IRCMessage struct {
-	Messages []string
-	Channel  string
-}
-
-// Module defines a common interface for all CptHook modules
-type Module interface {
-	init(c *viper.Viper)
-	getChannelList() []string
-	getEndpoint() string
-	getHandler() http.HandlerFunc
-}
-
-var messageChannel = make(chan IRCMessage, 10)
+var inputChannel = make(chan input.IRCMessage, 10)
 
 func configureLogLevel() {
 	if l := viper.GetString("logging.level"); l != "" {
@@ -45,6 +33,31 @@ func configureLogLevel() {
 	log.SetLevel(log.ErrorLevel)
 }
 
+type Configuration struct {
+	Modules map[string]InputModule `yaml:"modules"`
+}
+
+type InputModule struct {
+	Enalbed string `yaml:"enabled"`
+}
+
+func createModuleObject(name string) (input.Module, error) {
+	var m input.Module
+	var e error
+	switch name {
+	case "gitlab":
+		m = &input.GitlabModule{}
+	case "prometheus":
+		m = &input.PrometheusModule{}
+	case "simple":
+		m = &input.SimpleModule{}
+	default:
+		e = fmt.Errorf("found configuration for unknown module: %q", name)
+	}
+
+	return m, e
+}
+
 func main() {
 	confDirPtr := flag.String("config", "/etc/cpthook.yml", "Path to the configfile")
 	flag.Parse()
@@ -61,46 +74,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	configureLogLevel()
 
-	var moduleList = viper.Sub("modules")
 	var channelList = []string{}
+	var configurtaion = Configuration{}
 
-	// Status module
-	if moduleList.GetBool("status.enabled") {
-		log.Info("Status module is active")
-		var statusModule Module = &StatusModule{}
-		statusModule.init(viper.Sub("modules.status"))
-		channelList = append(channelList, statusModule.getChannelList()...)
-		http.HandleFunc(statusModule.getEndpoint(), statusModule.getHandler())
+	err = viper.Unmarshal(&configurtaion)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Prometheus module
-	if moduleList.GetBool("prometheus.enabled") {
-		log.Info("Prometheus module is active")
-		var prometheusModule Module = &PrometheusModule{}
-		prometheusModule.init(viper.Sub("modules.prometheus"))
-		channelList = append(channelList, prometheusModule.getChannelList()...)
-		http.HandleFunc(prometheusModule.getEndpoint(), prometheusModule.getHandler())
-	}
+	for moduleName := range configurtaion.Modules {
+		module, err := createModuleObject(moduleName)
+		if err != nil {
+			log.Error(err)
+		}
+		log.Infof("Loaded module %q", moduleName)
+		configPath := fmt.Sprintf("modules.%s", moduleName)
+		module.Init(viper.Sub(configPath), &inputChannel)
+		channelList = append(channelList, module.GetChannelList()...)
+		http.HandleFunc(module.GetEndpoint(), module.GetHandler())
 
-	// Gitlab module
-	if moduleList.GetBool("gitlab.enabled") {
-		log.Info("Gitlab module is active")
-		var gitlabModule Module = &GitlabModule{}
-		gitlabModule.init(viper.Sub("modules.gitlab"))
-		channelList = append(channelList, gitlabModule.getChannelList()...)
-		http.HandleFunc(gitlabModule.getEndpoint(), gitlabModule.getHandler())
-	}
-
-	// Simple module
-	if moduleList.GetBool("simple.enabled") {
-		log.Info("Simple module is active")
-		var simpleModule Module = &SimpleModule{}
-		simpleModule.init(viper.Sub("modules.simple"))
-		channelList = append(channelList, simpleModule.getChannelList()...)
-		http.HandleFunc(simpleModule.getEndpoint(), simpleModule.getHandler())
 	}
 
 	// Start IRC connection

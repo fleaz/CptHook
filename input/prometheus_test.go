@@ -1,9 +1,9 @@
-package main
+package input
 
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"os"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestSimpleHandler(t *testing.T) {
+func TestPrometheusHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
@@ -19,17 +19,21 @@ func TestSimpleHandler(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	body := strings.NewReader("Hello, World!")
+	file, e := os.Open("./tests/prometheus.json")
+	if e != nil {
+		log.Fatal(e)
+	}
 
-	req, err := http.NewRequest("POST", "/", body)
+	req, err := http.NewRequest("POST", "/", file)
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
-	var simpleModule Module = &SimpleModule{}
-	simpleModule.init(viper.Sub("modules.simple"))
-	handler := http.HandlerFunc(simpleModule.getHandler())
+	var prometheusModule Module = &PrometheusModule{}
+	prometheusModule.init(viper.Sub("modules.prometheus"), nil)
+	handler := http.HandlerFunc(prometheusModule.getHandler())
 
 	handler.ServeHTTP(rr, req)
 

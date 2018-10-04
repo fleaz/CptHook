@@ -1,9 +1,9 @@
-package main
+package input
 
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -11,30 +11,25 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestGitlabHandler(t *testing.T) {
+func TestSimpleHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 
-	file, e := os.Open("./tests/gitlab.json")
-	if e != nil {
-		log.Fatal(e)
-	}
+	body := strings.NewReader("Hello, World!")
 
-	req, err := http.NewRequest("POST", "/", file)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Gitlab-Event", "Push Hook")
+	req, err := http.NewRequest("POST", "/", body)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
-	var gitlabModule Module = &GitlabModule{}
-	gitlabModule.init(viper.Sub("modules.gitlab"))
-	handler := http.HandlerFunc(gitlabModule.getHandler())
+	var simpleModule Module = &SimpleModule{}
+	simpleModule.init(viper.Sub("modules.simple"), nil)
+	handler := http.HandlerFunc(simpleModule.getHandler())
 
 	handler.ServeHTTP(rr, req)
 
