@@ -1,4 +1,8 @@
 # CptHook
+[![Build Status](https://travis-ci.org/fleaz/CptHook.svg?branch=master)](https://travis-ci.org/fleaz/CptHook)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fleaz/CptHook)](https://goreportcard.com/report/github.com/fleaz/CptHook)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/fleaz/CptHook/blob/master/LICENSE)
+
 Receive webhooks from different applications and post them to different IRC channels
 
 After writing a webhook receiver for both Prometheus and Gitlab, to post notifications to
