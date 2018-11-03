@@ -19,7 +19,7 @@ func TestGitlabHandler(t *testing.T) {
 		log.Panic(err)
 	}
 
-	file, e := os.Open("./tests/gitlab.json")
+	file, e := os.Open("./test_data/gitlab.json")
 	if e != nil {
 		log.Fatal(e)
 	}
@@ -33,8 +33,9 @@ func TestGitlabHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var gitlabModule Module = &GitlabModule{}
-	gitlabModule.init(viper.Sub("modules.gitlab"), nil)
-	handler := http.HandlerFunc(gitlabModule.getHandler())
+	c := make(chan IRCMessage, 1)
+	gitlabModule.Init(viper.Sub("modules.gitlab"), &c)
+	handler := http.HandlerFunc(gitlabModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 

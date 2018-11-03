@@ -28,8 +28,8 @@ func TestSimpleHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var simpleModule Module = &SimpleModule{}
-	simpleModule.init(viper.Sub("modules.simple"), nil)
-	handler := http.HandlerFunc(simpleModule.getHandler())
+	simpleModule.Init(viper.Sub("modules.simple"), nil)
+	handler := http.HandlerFunc(simpleModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 
