@@ -13,7 +13,7 @@ import (
 
 func TestSimpleHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(err)
