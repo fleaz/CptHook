@@ -90,8 +90,8 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	for {
 		if err := client.Connect(); err != nil {
-			log.Warn("Connection to %s terminated: %s", client.Server(), err)
-			log.Warn("Reconnecting to %s in 30 seconds...", client.Server())
+			log.Warnf("Connection to %s terminated: %s", client.Server(), err)
+			log.Warn("Reconnecting to in 30 seconds...")
 			time.Sleep(30 * time.Second)
 		}
 	}
