@@ -13,38 +13,48 @@ import (
 )
 
 type GitlabModule struct {
-	channelMapping mapping
+	channelMapping mappings
 }
 
 type mapping struct {
-	DefaultChannel   string              `mapstructure:"default"`
-	GroupMappings    map[string][]string `mapstructure:"groups"`
-	ExplicitMappings map[string][]string `mapstructure:"explicit"`
+	Name string        `mapstructure:"name"`
+	Channels []string  `mapstructure:"channels"`
 }
 
-func contains(mapping map[string][]string, entry string) bool {
-	for k := range mapping {
-		if k == entry {
-			return true
+type mappings struct {
+	DefaultChannel   string     `mapstructure:"default"`
+	GroupMappings    []mapping  `mapstructure:"groups"`
+	ExplicitMappings []mapping  `mapstructure:"explicit"`
+}
+
+func contains(mapping []mapping, entry string) (bool, *mapping) {
+	for _, m := range mapping {
+		if m.Name == entry {
+			return true, &m
 		}
 	}
-	return false
+	return false, nil
 }
 
 func (m GitlabModule) sendMessage(message string, projectName string, namespace string) {
 	var channelNames []string
 	var fullProjectName = namespace + "/" + projectName
 
-	if contains(m.channelMapping.ExplicitMappings, fullProjectName) { // Check if explizit mapping exists
-		for _, channelName := range m.channelMapping.ExplicitMappings[fullProjectName] {
+	fmt.Printf(": %+v\n", m.channelMapping.GroupMappings)
+	fmt.Printf(": %+v\n", namespace)
+	if found, mapping := contains(m.channelMapping.ExplicitMappings, fullProjectName); found { // Check if explizit mapping exists
+		for _, channelName := range mapping.Channels {
 			channelNames = append(channelNames, channelName)
 		}
-	} else if contains(m.channelMapping.GroupMappings, namespace) { // Check if group mapping exists
-		for _, channelName := range m.channelMapping.GroupMappings[namespace] {
+		fmt.Printf("explicit: %+v\n", channelNames);
+	} else if found, mapping := contains(m.channelMapping.GroupMappings, namespace); found { // Check if group mapping exists
+		for _, channelName := range mapping.Channels {
 			channelNames = append(channelNames, channelName)
 		}
+		fmt.Printf("group: %+v\n", channelNames);
 	} else { // Fall back to default channel
 		channelNames = append(channelNames, m.channelMapping.DefaultChannel)
+		fmt.Printf("default: %+v\n", channelNames);
 	}
 
 	for _, channelName := range channelNames {
@@ -53,25 +63,25 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 		event.Channel = channelName
 		messageChannel <- event
 	}
-
 }
 
 func (m *GitlabModule) init(c *viper.Viper) {
-	m.channelMapping.DefaultChannel = c.GetString("default")
-	m.channelMapping.GroupMappings = c.GetStringMapStringSlice("groups")
-	m.channelMapping.ExplicitMappings = c.GetStringMapStringSlice("explicit")
+	err := c.Unmarshal(&m.channelMapping)
+	if err != nil {
+		log.Fatal("Failed to unmarshal channelmapping into struct")
+	}
 }
 
 func (m GitlabModule) getChannelList() []string {
 	var all []string
 
 	for _, v := range m.channelMapping.ExplicitMappings {
-		for _, name := range v {
+		for _, name := range v.Channels {
 			all = append(all, name)
 		}
 	}
 	for _, v := range m.channelMapping.GroupMappings {
-		for _, name := range v {
+		for _, name := range v.Channels {
 			all = append(all, name)
 		}
 	}

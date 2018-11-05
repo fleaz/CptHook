@@ -27,11 +27,13 @@ modules:
         enabled: true
         default: "#defaultChannel"
         groups:
-            "myGitlabGroup":
-                - "#groupChannel"
+            - name: "my.GitlabGroup"
+              channels:
+                  - "#groupChannel"
         explicit:
-            "myGitlabGroup/mySpecialGitlabProject":
-                - "#specificChannel"
+            - name: "myGitlabGroup/mySpecialGitlabProject"
+              channels:
+                  - "#specificChannel"
     simple:
         enabled: True
         default_channel: "#defaultChannel"
