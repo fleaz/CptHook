@@ -40,21 +40,16 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 	var channelNames []string
 	var fullProjectName = namespace + "/" + projectName
 
-	fmt.Printf(": %+v\n", m.channelMapping.GroupMappings)
-	fmt.Printf(": %+v\n", namespace)
 	if found, mapping := contains(m.channelMapping.ExplicitMappings, fullProjectName); found { // Check if explizit mapping exists
 		for _, channelName := range mapping.Channels {
 			channelNames = append(channelNames, channelName)
 		}
-		fmt.Printf("explicit: %+v\n", channelNames);
 	} else if found, mapping := contains(m.channelMapping.GroupMappings, namespace); found { // Check if group mapping exists
 		for _, channelName := range mapping.Channels {
 			channelNames = append(channelNames, channelName)
 		}
-		fmt.Printf("group: %+v\n", channelNames);
 	} else { // Fall back to default channel
 		channelNames = append(channelNames, m.channelMapping.DefaultChannel)
-		fmt.Printf("default: %+v\n", channelNames);
 	}
 
 	for _, channelName := range channelNames {
