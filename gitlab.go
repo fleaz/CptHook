@@ -57,10 +57,9 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 }
 
 func (m *GitlabModule) init(c *viper.Viper) {
-	err := c.Unmarshal(&m.channelMapping)
-	if err != nil {
-		log.Fatal("Failed to unmarshal channelmapping into struct")
-	}
+	m.channelMapping.DefaultChannel = c.GetString("default")
+	m.channelMapping.GroupMappings = c.GetStringMapStringSlice("groups")
+	m.channelMapping.ExplicitMappings = c.GetStringMapStringSlice("explicit")
 }
 
 func (m GitlabModule) getChannelList() []string {
