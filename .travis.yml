@@ -28,6 +28,13 @@ deploy:
     script: bash scripts/deploy.sh stable
     on:
       branch: master
+# Build tagged Docker container
+  - provider: script
+    skip_cleanup: true
+    script: bash scripts/deploy.sh $TARVIS_TAG
+    on:
+      tags: true
+      branch: master
 # Build development Docker container
   - provider: script
     skip_cleanup: true
