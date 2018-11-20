@@ -33,7 +33,7 @@ func TestGitlabHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var gitlabModule Module = &GitlabModule{}
-	c := make(chan IRCMessage, 1)
+	c := make(chan IRCMessage, 10)
 	gitlabModule.Init(viper.Sub("modules.gitlab"), &c)
 	handler := http.HandlerFunc(gitlabModule.GetHandler())
 

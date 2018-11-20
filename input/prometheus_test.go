@@ -32,7 +32,7 @@ func TestPrometheusHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var prometheusModule Module = &PrometheusModule{}
-	c := make(chan IRCMessage, 1)
+	c := make(chan IRCMessage, 10)
 	prometheusModule.Init(viper.Sub("modules.prometheus"), &c)
 	handler := http.HandlerFunc(prometheusModule.GetHandler())
 
