@@ -31,7 +31,7 @@ deploy:
 # Build tagged Docker container
   - provider: script
     skip_cleanup: true
-    script: bash scripts/deploy.sh $TARVIS_TAG
+    script: bash scripts/deploy.sh $TRAVIS_TAG
     on:
       tags: true
       branch: master
