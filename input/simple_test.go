@@ -1,4 +1,4 @@
-package main
+package input
 
 import (
 	"net/http"
@@ -13,7 +13,7 @@ import (
 
 func TestSimpleHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -28,8 +28,9 @@ func TestSimpleHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var simpleModule Module = &SimpleModule{}
-	simpleModule.init(viper.Sub("modules.simple"))
-	handler := http.HandlerFunc(simpleModule.getHandler())
+	c := make(chan IRCMessage, 10)
+	simpleModule.Init(viper.Sub("modules.simple"), &c)
+	handler := http.HandlerFunc(simpleModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 

@@ -90,8 +90,8 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	for {
 		if err := client.Connect(); err != nil {
-			log.Warn("Connection to %s terminated: %s", client.Server(), err)
-			log.Warn("Reconnecting to %s in 30 seconds...", client.Server())
+			log.Warnf("Connection to %s terminated: %s", client.Server(), err)
+			log.Warn("Reconnecting to in 30 seconds...")
 			time.Sleep(30 * time.Second)
 		}
 	}
@@ -101,7 +101,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 func channelReceiver() {
 	log.Info("ChannelReceiver started")
 
-	for elem := range messageChannel {
+	for elem := range inputChannel {
 		log.Debug("Took IRC event out of channel.")
 		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
@@ -116,8 +116,10 @@ func joinChannel(newChannel string) {
 			return
 		}
 	}
+
 	log.WithFields(log.Fields{
 		"channel": newChannel,
-	}).Debug("Need to join new channel %q\n", newChannel)
+	}).Debug("Need to join new channel")
+
 	client.Cmd.Join(newChannel)
 }
