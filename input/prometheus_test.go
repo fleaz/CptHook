@@ -1,27 +1,27 @@
-package main
+package input
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
 
 func TestPrometheusHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+		log.Fatal(err)
 	}
 
-	file, e := os.Open("./tests/prometheus.json")
+	file, e := os.Open("./test_data/prometheus.json")
 	if e != nil {
-		fmt.Printf("File error: %v\n", e)
-		os.Exit(1)
+		log.Fatal(e)
 	}
 
 	req, err := http.NewRequest("POST", "/", file)
@@ -32,8 +32,9 @@ func TestPrometheusHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var prometheusModule Module = &PrometheusModule{}
-	prometheusModule.init(viper.Sub("modules.prometheus"))
-	handler := http.HandlerFunc(prometheusModule.getHandler())
+	c := make(chan IRCMessage, 10)
+	prometheusModule.Init(viper.Sub("modules.prometheus"), &c)
+	handler := http.HandlerFunc(prometheusModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 

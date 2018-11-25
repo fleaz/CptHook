@@ -1,27 +1,27 @@
-package main
+package input
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
 
 func TestGitlabHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+		log.Panic(err)
 	}
 
-	file, e := os.Open("./tests/gitlab.json")
+	file, e := os.Open("./test_data/gitlab.json")
 	if e != nil {
-		fmt.Printf("File error: %v\n", e)
-		os.Exit(1)
+		log.Fatal(e)
 	}
 
 	req, err := http.NewRequest("POST", "/", file)
@@ -33,8 +33,9 @@ func TestGitlabHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var gitlabModule Module = &GitlabModule{}
-	gitlabModule.init(viper.Sub("modules.gitlab"))
-	handler := http.HandlerFunc(gitlabModule.getHandler())
+	c := make(chan IRCMessage, 10)
+	gitlabModule.Init(viper.Sub("modules.gitlab"), &c)
+	handler := http.HandlerFunc(gitlabModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 

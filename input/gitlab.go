@@ -1,19 +1,21 @@
-package main
+package input
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"text/template"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
 
 type GitlabModule struct {
 	channelMapping mapping
+	channel        chan IRCMessage
 }
 
 type mapping struct {
@@ -29,6 +31,14 @@ func contains(mapping map[string][]string, entry string) bool {
 		}
 	}
 	return false
+}
+
+func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
+	err := c.Unmarshal(&m.channelMapping)
+	if err != nil {
+		log.Fatal("Failed to unmarshal channelmapping into struct")
+	}
+	m.channel = *channel
 }
 
 func (m GitlabModule) sendMessage(message string, projectName string, namespace string) {
@@ -51,19 +61,12 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 		var event IRCMessage
 		event.Messages = append(event.Messages, message)
 		event.Channel = channelName
-		messageChannel <- event
+		m.channel <- event
 	}
 
 }
 
-func (m *GitlabModule) init(c *viper.Viper) {
-	err := c.Unmarshal(&m.channelMapping)
-	if err != nil {
-		log.Fatal("Failed to unmarshal channelmapping into struct")
-	}
-}
-
-func (m GitlabModule) getChannelList() []string {
+func (m GitlabModule) GetChannelList() []string {
 	var all []string
 
 	for _, v := range m.channelMapping.ExplicitMappings {
@@ -81,11 +84,11 @@ func (m GitlabModule) getChannelList() []string {
 	return all
 }
 
-func (m GitlabModule) getEndpoint() string {
+func (m GitlabModule) GetEndpoint() string {
 	return "/gitlab"
 }
 
-func (m GitlabModule) getHandler() http.HandlerFunc {
+func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 	const pushCompareString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/compare/{{ .BeforeCommit }}...{{ .AfterCommit }}"
 	const pushCommitLogString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/commits/{{ .Branch }}"
@@ -167,6 +170,7 @@ func (m GitlabModule) getHandler() http.HandlerFunc {
 	}
 
 	return func(wr http.ResponseWriter, req *http.Request) {
+		log.Debug("Got a request for the GitlabModule")
 		defer req.Body.Close()
 		decoder := json.NewDecoder(req.Body)
 

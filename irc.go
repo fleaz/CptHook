@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/lrstanley/girc"
 	"github.com/spf13/viper"
@@ -90,8 +90,8 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	for {
 		if err := client.Connect(); err != nil {
-			log.Printf("Connection to %s terminated: %s", client.Server(), err)
-			log.Printf("Reconnecting to %s in 30 seconds...", client.Server())
+			log.Warnf("Connection to %s terminated: %s", client.Server(), err)
+			log.Warn("Reconnecting to in 30 seconds...")
 			time.Sleep(30 * time.Second)
 		}
 	}
@@ -99,10 +99,10 @@ func ircConnection(config *viper.Viper, channelList []string) {
 }
 
 func channelReceiver() {
-	log.Println("ChannelReceiver started")
+	log.Info("ChannelReceiver started")
 
-	for elem := range messageChannel {
-		fmt.Println("Took IRC event out of channel.")
+	for elem := range inputChannel {
+		log.Debug("Took IRC event out of channel.")
 		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
 			client.Cmd.Message(elem.Channel, message)
@@ -116,6 +116,10 @@ func joinChannel(newChannel string) {
 			return
 		}
 	}
-	fmt.Printf("Need to join new channel %q\n", newChannel)
+
+	log.WithFields(log.Fields{
+		"channel": newChannel,
+	}).Debug("Need to join new channel")
+
 	client.Cmd.Join(newChannel)
 }

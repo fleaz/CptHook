@@ -17,7 +17,7 @@ before_install:
 
 script:
   - cp cpthook.yml.example cpthook.yml
-  - go test
+  - go test ./...
   - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o CptHook
   - docker build -f Dockerfile -t $IMAGE .
 
@@ -27,6 +27,13 @@ deploy:
     skip_cleanup: true
     script: bash scripts/deploy.sh stable
     on:
+      branch: master
+# Build tagged Docker container
+  - provider: script
+    skip_cleanup: true
+    script: bash scripts/deploy.sh $TRAVIS_TAG
+    on:
+      tags: true
       branch: master
 # Build development Docker container
   - provider: script
@@ -43,13 +50,4 @@ deploy:
       condition: $TRAVIS_OS_NAME = linux
 
 notifications:
-  webhooks:
-    urls:
-      - http://webhooks.rainbownerds.de:12345
-    on_success: always # default: always
-    on_failure: always # default: always
-    on_start: always   # default: never
-    on_cancel: always # default: always
-    on_error: always # default: always
-
   email: false

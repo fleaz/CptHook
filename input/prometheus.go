@@ -1,20 +1,22 @@
-package main
+package input
 
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"text/template"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/spf13/viper"
 )
 
 type PrometheusModule struct {
 	defaultChannel string
+	channel        chan IRCMessage
 	hostnameFilter string
 }
 
@@ -84,20 +86,21 @@ func shortenInstanceName(name string, pattern string) string {
 	return name
 }
 
-func (m PrometheusModule) getEndpoint() string {
+func (m PrometheusModule) GetEndpoint() string {
 	return "/prometheus"
 }
 
-func (m PrometheusModule) getChannelList() []string {
+func (m PrometheusModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }
 
-func (m *PrometheusModule) init(c *viper.Viper) {
+func (m *PrometheusModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 	m.defaultChannel = c.GetString("channel")
+	m.channel = *channel
 	m.hostnameFilter = c.GetString("hostname_filter")
 }
 
-func (m PrometheusModule) getHandler() http.HandlerFunc {
+func (m PrometheusModule) GetHandler() http.HandlerFunc {
 
 	const firingTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}} - {{ .Alert.Annotations.description}}"
 	const resolvedTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}}"
@@ -119,7 +122,7 @@ func (m PrometheusModule) getHandler() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got http event for /prometheus")
+		log.Debug("Got a request for the PrometheusModule")
 		defer r.Body.Close()
 		decoder := json.NewDecoder(r.Body)
 
@@ -185,7 +188,7 @@ func (m PrometheusModule) getHandler() http.HandlerFunc {
 				_ = hostListTemplate.Execute(&buf, &instanceList)
 				event.Messages = append(event.Messages, buf.String())
 				event.Channel = m.defaultChannel
-				messageChannel <- event
+				m.channel <- event
 			}
 		}
 	}
