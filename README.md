@@ -76,9 +76,9 @@ this channel will be used. If not, the module will look if there exists for the 
 used. If not, the `default_channel` will be used.
 **Module specific configuration**
 ```
-- groups:
+- groups
 This dictionary maps Gitlab groups to IRC-channels.
-- explicit:
+- explicit
 This dictionary maps full project paths (groupname/projectname) to IRC-channels.
 ```
 
