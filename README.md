@@ -1,32 +1,37 @@
 # CptHook
-Receive webhooks from different applications and post them to different IRC channels
+[![Build Status](https://travis-ci.org/fleaz/CptHook.svg?branch=master)](https://travis-ci.org/fleaz/CptHook)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fleaz/CptHook)](https://goreportcard.com/report/github.com/fleaz/CptHook)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/fleaz/CptHook/blob/master/LICENSE)
 
-After writing a webhook receiver for both Prometheus and Gitlab, to post notifications to
-an IRC channel, I decided to merge the code an build something more generic. Many applications
-have webhooks which get triggered on an event and HTTP POST a bunch of json to you. Handling this
-is nearly identical all the time:
-  1. Read some config from a file (e.g. list of IRC channels) 
-  2. Provide HTTP endpoint to receive webhooks
-  3. Validate and parse the received json
-  4. Construct a message
-  5. Take the message from `4`and write it to the IRC channels defined in `1`
- 
-The points `3` and `4` get handled by the specific modules. All the other points are generic
-and can be reused for every module.
+CptHook can be used as a single endpoint for all your webhook notifications which then get parsed and send to
+different IRC channels according to the configuration.
+
+Take a look at the [input](https://github.com/fleaz/CptHook/tree/master/input) folder to find out which services are
+already supported by CptHook.
+
+**If you have questions or problems visit #CptHook on HackInt -> [WebChat](*https://webirc.hackint.org/#irc://irc.hackint.org/#CptHook)**
 
 ## Installation
-Local installation
+
+**Requirements**
+ * Go > 1.7
+
+You can either install CptHook manually
 ```
-cp cpthook.yml.example cpthook.yml
-dep ensure
-go build
-go run
+go get -u github.com/fleaz/CptHook
+cp $GOPATH/bin/CptHook /usr/local/bin/CptHook
+vim /etc/cpthook.yml
+CptHook
 ```
-or use the prebuild Dockercontainer
+
+or use the prebuild Docker container
+
 ```
-cp cpthook.yml.example cpthook.yml
-docker run --rm -it -v $(pwd)/cpthook.yml:/etc/cpthook.yml -p 8086:8086 fleaz/cpthook
+vim cpthook.yml
+docker run --rm -it -v $(pwd)/cpthook.yml:/etc/cpthook.yml -p 8086:8086 fleaz/cpthook:stable
 ```
+
+or download the [prebuild binarys](https://github.com/fleaz/CptHook/releases/latest)
 
 ## Authentication
 SASL support is available to authenticate to the server.
@@ -37,21 +42,47 @@ The following methods are supported:
 To use CertFP, a client certificate (`certfile`) and key (`keyfile`) must be specified in the `irc.ssl.client_cert`
 section and the `SASL-External` authentication method must be used.
 
-## Modules
-When you want to create a new module, e.g. 'Foo' you have to do three things:
-  - Add a section 'foo' to the `cpthook.yml.example`. Everything under `cpthook.foo` will be provided to your module
-  - Add the '/foo' endpoint to the `main.go` file
-  - Create a `foo.go` file in the `main` package and provide a handler function
+## Build a new module
+When you want to create a new module, e.g. for the service 'Foo', follow these steps to get started:
+  - Add a section 'foo' to `cpthook.yml.example`. Everything below `cpthook.foo` will be provided to your module. 
+  - Add a case to the `main.createModuleObject` function
+  - Create `foo.go` file in the `input` folder
+  - Implement the `Module` interface according to `input/helper.go`
 
-### Status
-This will soon be used to have a small web interface to show e.g. the last received webhooks.
+## Already available modules
+
+**General configuration configuration**
+```
+- enabled
+Defines if CptHook should load this module
+- default_channel / default
+Defines a fallback channel where messages should go if no filtering has matched
+```
 
 ### Prometheus
 Receives webhooks from Alertmanager.
 
+**Module specific configuration**
+```
+- hostname_filter
+This regex is used to shorten the hostname of instance name in an alert. This regex should contain exactly one
+capture group which will be used as the hostname if the regex matches.
+```
+
 ### Gitlab
-Receives webhooks from Gitlab. Currently not all types are implemented!
+Receives webhooks from Gitlab. *Currently not all event types are implemented!* When a webhook is received this
+module will first check if there is an explicit mapping in the configuration especially for this project. If yes,
+this channel will be used. If not, the module will look if there exists for the group. If yes, this channel will be
+used. If not, the `default_channel` will be used.
+**Module specific configuration**
+```
+- groups
+This dictionary maps Gitlab groups to IRC-channels.
+- explicit
+This dictionary maps full project paths (groupname/projectname) to IRC-channels.
+```
 
 ### Simple
 Receives arbitrary messages as text via a HTTP `POST` request and forwards this message line by line to a channel.
-The channel can be specified by the `channel` query parameter or the `default_channel` from the config is used.
+The channel can be specified by the `channel` query parameter, otherwise the `default_channel` from the config will
+be used.
