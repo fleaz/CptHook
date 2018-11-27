@@ -88,6 +88,7 @@ func main() {
 		module, err := createModuleObject(moduleName)
 		if err != nil {
 			log.Error(err)
+			continue
 		}
 		log.Infof("Loaded module %q", moduleName)
 		configPath := fmt.Sprintf("modules.%s", moduleName)
