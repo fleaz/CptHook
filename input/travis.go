@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -34,6 +34,7 @@ type payload struct {
 	Repository    repository `json:"repository"`
 	Author        string     `json:"author_name"`
 	Commiter      string     `json:"committer_name"`
+	BuildURL      string     `json:"build_url"`
 }
 
 func (m *TravisModule) Init(c *viper.Viper, channel *chan IRCMessage) {
@@ -50,8 +51,8 @@ func (m TravisModule) GetChannelList() []string {
 }
 
 func (m TravisModule) GetHandler() http.HandlerFunc {
-	const startedString = "\x0315{{ .Author }}\x03 started a build for \x0312{{ .Slug }}\x03 with the commit '{{ .CommitMessage }}' on branch {{ .Branch }}"
-	const finishedString = "\x0315{{ .Author }}\x03's build for \x0312{{ .Slug }}\x03 finished after {{ .Duration }}sec and {{ .StatusMessage }}"
+	const startedString = "[\x0315{{ .Slug }}\x03] {{ .Author }} commited '{{ .CommitMessage }}' to \x0308{{ .Branch }}\x03 - {{ .BuildURL }}"
+	const finishedString = "[\x0315{{ .Slug }}\x03] Build for '{{ .CommitMessage }}' finished after \x0315{{ .Duration }}\x03 sec and {{ .StatusMessage }}"
 
 	BuildStatus := map[string]string{
 		"Pending":       "is \x0306pending\x03",
@@ -71,18 +72,18 @@ func (m TravisModule) GetHandler() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got http event for /travis")
+		log.Info("Got event for /travis")
 		r.ParseForm()
 		var encPayload = r.Form.Get("payload")
 		t, err := url.QueryUnescape(encPayload)
 		if err != nil {
-			log.Println("Not properly URL-encoded")
+			log.Error("Not properly URL-encoded")
 			log.Fatal(err)
 		}
 		var p payload
 		err = json.Unmarshal([]byte(t), &p)
 		if err != nil {
-			log.Println("Not valid json")
+			log.Error("Not valid json")
 			log.Fatal(err)
 		}
 
