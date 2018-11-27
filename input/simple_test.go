@@ -1,22 +1,22 @@
-package main
+package input
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"strings"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
 
 func TestSimpleHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+		log.Fatal(err)
 	}
 
 	body := strings.NewReader("Hello, World!")
@@ -28,8 +28,9 @@ func TestSimpleHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var simpleModule Module = &SimpleModule{}
-	simpleModule.init(viper.Sub("modules.simple"))
-	handler := http.HandlerFunc(simpleModule.getHandler())
+	c := make(chan IRCMessage, 10)
+	simpleModule.Init(viper.Sub("modules.simple"), &c)
+	handler := http.HandlerFunc(simpleModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 

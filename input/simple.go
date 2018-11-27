@@ -1,31 +1,36 @@
-package main
+package input
 
 import (
 	"bufio"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
 
 type SimpleModule struct {
 	defaultChannel string
+	channel        chan IRCMessage
 }
 
-func (m *SimpleModule) init(c *viper.Viper) {
+func (m *SimpleModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 	m.defaultChannel = c.GetString("default_channel")
+	m.channel = *channel
 }
 
-func (m SimpleModule) getChannelList() []string {
+func (m SimpleModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }
 
-func (m SimpleModule) getEndpoint() string {
+func (m SimpleModule) GetEndpoint() string {
 	return "/simple"
 }
 
-func (m SimpleModule) getHandler() http.HandlerFunc {
+func (m SimpleModule) GetHandler() http.HandlerFunc {
 
 	return func(wr http.ResponseWriter, req *http.Request) {
+		log.Debug("Got a request for the SimpleModule")
 		defer req.Body.Close()
 
 		query := req.URL.Query()
@@ -44,7 +49,7 @@ func (m SimpleModule) getHandler() http.HandlerFunc {
 		}
 
 		// Send message
-		messageChannel <- IRCMessage{
+		m.channel <- IRCMessage{
 			Messages: lines,
 			Channel:  channel,
 		}

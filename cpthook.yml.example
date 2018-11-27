@@ -1,6 +1,9 @@
 http:
     listen: ":8086"
 
+logging:
+    level: "INFO"
+
 irc:
     host: "irc.hackint.eu"
     port: 6667

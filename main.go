@@ -3,29 +3,60 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"path"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/fleaz/CptHook/input"
 	"github.com/spf13/viper"
 )
 
-// IRCMessage are send over the messageChannel from the different modules
-type IRCMessage struct {
-	Messages []string
-	Channel  string
+var inputChannel = make(chan input.IRCMessage, 10)
+
+func configureLogLevel() {
+	if l := viper.GetString("logging.level"); l != "" {
+		level, err := log.ParseLevel(l)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"level": l,
+			}).Fatal("Uknown loglevel defined in configuration.")
+		}
+		log.WithFields(log.Fields{
+			"level": level,
+		}).Info("Setting loglevel defined by configuration")
+		log.SetLevel(level)
+		return
+	}
+	log.Info("Loglevel not defined in configuration. Defaulting to ERROR")
+	log.SetLevel(log.ErrorLevel)
 }
 
-// Module defines a common interface for all CptHook modules
-type Module interface {
-	init(c *viper.Viper)
-	getChannelList() []string
-	getEndpoint() string
-	getHandler() http.HandlerFunc
+type Configuration struct {
+	Modules map[string]InputModule `yaml:"modules"`
 }
 
-var messageChannel = make(chan IRCMessage, 10)
+type InputModule struct {
+	Enalbed string `yaml:"enabled"`
+}
+
+func createModuleObject(name string) (input.Module, error) {
+	var m input.Module
+	var e error
+	switch name {
+	case "gitlab":
+		m = &input.GitlabModule{}
+	case "prometheus":
+		m = &input.PrometheusModule{}
+	case "simple":
+		m = &input.SimpleModule{}
+	default:
+		e = fmt.Errorf("found configuration for unknown module: %q", name)
+	}
+
+	return m, e
+}
 
 func main() {
 	confDirPtr := flag.String("config", "/etc/cpthook.yml", "Path to the configfile")
@@ -41,46 +72,29 @@ func main() {
 	}
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
+		log.Fatal(err)
 	}
+	configureLogLevel()
 
-	var moduleList = viper.Sub("modules")
 	var channelList = []string{}
+	var configurtaion = Configuration{}
 
-	// Status module
-	if moduleList.GetBool("status.enabled") {
-		log.Println("Status module is active")
-		var statusModule Module = &StatusModule{}
-		statusModule.init(viper.Sub("modules.status"))
-		channelList = append(channelList, statusModule.getChannelList()...)
-		http.HandleFunc(statusModule.getEndpoint(), statusModule.getHandler())
+	err = viper.Unmarshal(&configurtaion)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Prometheus module
-	if moduleList.GetBool("prometheus.enabled") {
-		log.Println("Prometheus module is active")
-		var prometheusModule Module = &PrometheusModule{}
-		prometheusModule.init(viper.Sub("modules.prometheus"))
-		channelList = append(channelList, prometheusModule.getChannelList()...)
-		http.HandleFunc(prometheusModule.getEndpoint(), prometheusModule.getHandler())
-	}
+	for moduleName := range configurtaion.Modules {
+		module, err := createModuleObject(moduleName)
+		if err != nil {
+			log.Error(err)
+		}
+		log.Infof("Loaded module %q", moduleName)
+		configPath := fmt.Sprintf("modules.%s", moduleName)
+		module.Init(viper.Sub(configPath), &inputChannel)
+		channelList = append(channelList, module.GetChannelList()...)
+		http.HandleFunc(module.GetEndpoint(), module.GetHandler())
 
-	// Gitlab module
-	if moduleList.GetBool("gitlab.enabled") {
-		log.Println("Gitlab module is active")
-		var gitlabModule Module = &GitlabModule{}
-		gitlabModule.init(viper.Sub("modules.gitlab"))
-		channelList = append(channelList, gitlabModule.getChannelList()...)
-		http.HandleFunc(gitlabModule.getEndpoint(), gitlabModule.getHandler())
-	}
-
-	// Simple module
-	if moduleList.GetBool("simple.enabled") {
-		log.Println("Simple module is active")
-		var simpleModule Module = &SimpleModule{}
-		simpleModule.init(viper.Sub("modules.simple"))
-		channelList = append(channelList, simpleModule.getChannelList()...)
-		http.HandleFunc(simpleModule.getEndpoint(), simpleModule.getHandler())
 	}
 
 	// TravisCI module
@@ -96,6 +110,9 @@ func main() {
 	go ircConnection(viper.Sub("irc"), channelList)
 
 	// Start HTTP server
+	log.WithFields(log.Fields{
+		"listen": viper.GetString("http.listen"),
+	}).Info("Started HTTP Server")
 	log.Fatal(http.ListenAndServe(viper.GetString("http.listen"), nil))
 
 }
