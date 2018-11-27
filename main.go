@@ -51,6 +51,8 @@ func createModuleObject(name string) (input.Module, error) {
 		m = &input.PrometheusModule{}
 	case "simple":
 		m = &input.SimpleModule{}
+	case "travis":
+		m = &input.TravisModule{}
 	default:
 		e = fmt.Errorf("found configuration for unknown module: %q", name)
 	}
@@ -95,15 +97,6 @@ func main() {
 		channelList = append(channelList, module.GetChannelList()...)
 		http.HandleFunc(module.GetEndpoint(), module.GetHandler())
 
-	}
-
-	// TravisCI module
-	if moduleList.GetBool("travis.enabled") {
-		log.Println("TravisCI module is active")
-		var travisModule Module = &TravisModule{}
-		travisModule.init(viper.Sub("modules.travis"))
-		channelList = append(channelList, travisModule.getChannelList()...)
-		http.HandleFunc(travisModule.getEndpoint(), travisModule.getHandler())
 	}
 
 	// Start IRC connection

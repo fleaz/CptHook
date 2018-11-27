@@ -38,4 +38,7 @@ modules:
     simple:
         enabled: True
         default_channel: "#defaultChannel"
+    travis:
+        enabled: True
+        default_channel: "#defaultChannel"
 

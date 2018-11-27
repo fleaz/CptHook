@@ -1,4 +1,4 @@
-package main
+package input
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 
 type TravisModule struct {
 	defaultChannel string
+	channel        chan IRCMessage
 }
 
 type repository struct {
@@ -35,19 +36,20 @@ type payload struct {
 	Commiter      string     `json:"committer_name"`
 }
 
-func (m *TravisModule) init(c *viper.Viper) {
+func (m *TravisModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 	m.defaultChannel = c.GetString("default_channel")
+	m.channel = *channel
 }
 
-func (m TravisModule) getEndpoint() string {
+func (m TravisModule) GetEndpoint() string {
 	return "/travis"
 }
 
-func (m TravisModule) getChannelList() []string {
+func (m TravisModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }
 
-func (m TravisModule) getHandler() http.HandlerFunc {
+func (m TravisModule) GetHandler() http.HandlerFunc {
 	const startedString = "\x0315{{ .Author }}\x03 started a build for \x0312{{ .Slug }}\x03 with the commit '{{ .CommitMessage }}' on branch {{ .Branch }}"
 	const finishedString = "\x0315{{ .Author }}\x03's build for \x0312{{ .Slug }}\x03 finished after {{ .Duration }}sec and {{ .StatusMessage }}"
 
@@ -57,7 +59,7 @@ func (m TravisModule) getHandler() http.HandlerFunc {
 		"Fixed":         "is \x0303fixed\x03",
 		"Broken":        "is \x0304broken\x03",
 		"Failed":        "has \x0304failed\x03",
-		"Still Failing": "ist \x0304still failing\x03",
+		"Still Failing": "is \x0304still failing\x03",
 		"Canceled":      "was \x0304canceled\x03",
 		"Errored":       "has \x0313errored\x03",
 	}
@@ -94,7 +96,7 @@ func (m TravisModule) getHandler() http.HandlerFunc {
 			finishedTemplate.Execute(&buf, &p)
 		}
 
-		messageChannel <- IRCMessage{
+		m.channel <- IRCMessage{
 			Messages: []string{buf.String()},
 			Channel:  m.defaultChannel,
 		}

@@ -1,4 +1,4 @@
-package main
+package input
 
 import (
 	"fmt"
@@ -15,13 +15,13 @@ import (
 
 func TestTravisHandler(t *testing.T) {
 	viper.SetConfigName("cpthook")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s", err))
 	}
 
-	payload, e := ioutil.ReadFile("./tests/travis.json")
+	payload, e := ioutil.ReadFile("./test_data/travis.json")
 	if e != nil {
 		fmt.Printf("File error: %v\n", e)
 		os.Exit(1)
@@ -41,8 +41,9 @@ func TestTravisHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	var travisModule Module = &TravisModule{}
-	travisModule.init(viper.Sub("modules.travis"))
-	handler := http.HandlerFunc(travisModule.getHandler())
+	c := make(chan IRCMessage, 10)
+	travisModule.Init(viper.Sub("modules.travis"), &c)
+	handler := http.HandlerFunc(travisModule.GetHandler())
 
 	handler.ServeHTTP(rr, req)
 
