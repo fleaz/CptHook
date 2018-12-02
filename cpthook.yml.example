@@ -20,11 +20,9 @@ irc:
         password: "VerySecure!"
 
 modules:
-    status:
-        enabled: true
     prometheus:
         enabled: true
-        channel: "#prometeusChannel"
+        channel: "#prometheusChannel"
         hostname_filter: "(\\w*)\\.company.com:\\d{4}"
     gitlab:
         enabled: true
