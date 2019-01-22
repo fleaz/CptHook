@@ -174,7 +174,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 		defer req.Body.Close()
 		decoder := json.NewDecoder(req.Body)
 
-		var eventType = req.Header["X-Gitlab-Event"][0]
+		var eventType = req.Header.Get("X-Gitlab-Event")
 
 		type Project struct {
 			Name      string `json:"name"`
