@@ -271,7 +271,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			log.Printf("Got a Hook for a Pipeline Event")
 			var pipelineEvent PipelineEvent
 			if err := decoder.Decode(&pipelineEvent); err != nil {
-				log.Fatal(err)
+				log.Error(err)
 				return
 			}
 
@@ -303,7 +303,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			log.Printf("Got a Hook for a Job Event")
 			var jobEvent JobEvent
 			if err := decoder.Decode(&jobEvent); err != nil {
-				log.Fatal(err)
+				log.Error(err)
 				return
 			}
 
@@ -328,7 +328,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			log.Printf("Got Hook for a Merge Request")
 			var mergeEvent MergeEvent
 			if err := decoder.Decode(&mergeEvent); err != nil {
-				log.Fatal(err)
+				log.Error(err)
 				return
 			}
 
@@ -342,7 +342,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			log.Printf("Got Hook for an Issue")
 			var issueEvent IssueEvent
 			if err := decoder.Decode(&issueEvent); err != nil {
-				log.Fatal(err)
+				log.Error(err)
 				return
 			}
 
@@ -356,7 +356,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			log.Printf("Got Hook for a Push Event")
 			var pushEvent PushEvent
 			if err := decoder.Decode(&pushEvent); err != nil {
-				log.Println(err)
+				log.Error(err)
 				return
 			}
 
