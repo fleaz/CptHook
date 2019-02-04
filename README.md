@@ -86,3 +86,20 @@ This dictionary maps full project paths (groupname/projectname) to IRC-channels.
 Receives arbitrary messages as text via a HTTP `POST` request and forwards this message line by line to a channel.
 The channel can be specified by the `channel` query parameter, otherwise the `default_channel` from the config will
 be used.
+
+### Icinga2
+Receives webhooks from Icinga2. Add [icinga2-notifications-webhook] to your icinga2 installation to send the
+required webhooks.
+
+When a webhook is received this module will first check if there is an explicit
+mapping in the configuration especially for this host. If yes, this channel will be used. If not, the module will
+look if there exists for the hostgroup. If yes, this channel will be used. If not, the `default` channel will be used.
+
+**Module specific configuration**
+```
+- hostgroups
+This dictionary maps Icinga2 hostgroups to IRC-channels.
+- explicit
+This dictionary maps hostnames to IRC-channels.
+```
+[icinga2-notifications-webhook]: https://git.s7t.de/ManiacTwister/icinga2-notifications-webhook

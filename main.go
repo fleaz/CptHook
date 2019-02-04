@@ -51,6 +51,8 @@ func createModuleObject(name string) (input.Module, error) {
 		m = &input.PrometheusModule{}
 	case "simple":
 		m = &input.SimpleModule{}
+	case "icinga2":
+		m = &input.Icinga2Module{}
 	default:
 		e = fmt.Errorf("found configuration for unknown module: %q", name)
 	}

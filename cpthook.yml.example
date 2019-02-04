@@ -36,4 +36,13 @@ modules:
     simple:
         enabled: True
         default_channel: "#defaultChannel"
+    icinga2:
+      enabled: True
+      default: "#monitoring"
+      hostgroups:
+          "webservers":
+              - "#monitoring-web"
+      explicit:
+          "host.example.tld":
+              - "#monitoring-example"
 
