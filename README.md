@@ -9,7 +9,7 @@ different IRC channels according to the configuration.
 Take a look at the [input](https://github.com/fleaz/CptHook/tree/master/input) folder to find out which services are
 already supported by CptHook.
 
-**If you have questions or problems visit #CptHook on HackInt -> [WebChat](*https://webirc.hackint.org/#irc://irc.hackint.org/#CptHook)**
+**If you have questions or problems visit #CptHook on HackInt -> **[WebChat](https://webirc.hackint.org/#irc://irc.hackint.org/#CptHook)**
 
 ## Installation
 
