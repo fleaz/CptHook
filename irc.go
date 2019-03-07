@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ import (
 )
 
 var client *girc.Client
+var clientLock = &sync.RWMutex{}
 
 func ircConnection(config *viper.Viper, channelList []string) {
 	clientConfig := girc.Config{
@@ -77,9 +79,11 @@ func ircConnection(config *viper.Viper, channelList []string) {
 		}
 	}
 
+	clientLock.Lock()
 	client = girc.New(clientConfig)
 
 	client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
+		clientLock.Unlock()
 		for _, name := range channelList {
 			joinChannel(name)
 		}
@@ -90,6 +94,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	for {
 		if err := client.Connect(); err != nil {
+			clientLock.Lock()
 			log.Warnf("Connection to %s terminated: %s", client.Server(), err)
 			log.Warn("Reconnecting in 30 seconds...")
 			time.Sleep(30 * time.Second)
@@ -105,7 +110,9 @@ func channelReceiver() {
 		log.Debug("Took IRC event out of channel.")
 		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
+			clientLock.RLock()
 			client.Cmd.Message(elem.Channel, message)
+			clientLock.RUnlock()
 		}
 	}
 }
@@ -121,5 +128,7 @@ func joinChannel(newChannel string) {
 		"channel": newChannel,
 	}).Debug("Need to join new channel")
 
+	clientLock.RLock()
 	client.Cmd.Join(newChannel)
+	clientLock.RUnlock()
 }
