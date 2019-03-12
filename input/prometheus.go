@@ -154,8 +154,7 @@ func (m PrometheusModule) GetHandler() http.HandlerFunc {
 			instanceList = instanceList[:0]
 
 			for _, alert := range alertList {
-				name := alert.Labels["instance"].(string)
-				name = shortenInstanceName(name, m.hostnameFilter)
+				name := getNameFromLabels(&alert, m.hostnameFilter)
 				value, ok := alert.Annotations["value"].(string)
 				if ok {
 					inst = instance{Name: name, Value: value}
@@ -193,4 +192,17 @@ func (m PrometheusModule) GetHandler() http.HandlerFunc {
 		}
 	}
 
+}
+
+// getNameFromLabels tries to determine a meaningful name for an alert
+// If the alert has no 'instance' label, we use the 'alertname' which should always
+// be present in an alert
+func getNameFromLabels(alert *alert, filter string) string {
+	if instance, ok := alert.Labels["instance"]; ok {
+		return shortenInstanceName(instance.(string), filter)
+	} else if alertName, ok := alert.Labels["alertname"]; ok {
+		return alertName.(string)
+	} else {
+		return "unknown"
+	}
 }
