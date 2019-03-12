@@ -1,0 +1,39 @@
+{
+   "author":"admin",
+   "comment":"test",
+   "host":{
+      "check_attempt":1.0,
+      "display_name":"test.host.tld",
+      "hostgroups":[
+         "testhost"
+      ],
+      "last_hard_state":0.0,
+      "last_hard_state_change":1547331012.0,
+      "last_state":"UP",
+      "last_state_change":1547331012.0,
+      "last_state_type":"HARD",
+      "name":"test.host.tld",
+      "output":"PING =OK - Packet loss = 0%, RTA = 5.13 ms",
+      "state":"UP",
+      "state_type":"HARD",
+      "url":"https://monitoring.bla.tld/monitoring/host/show?host=test.host.tld"
+   },
+   "long_date_time":"2019-01-13 20:19:45 +0100",
+   "service":{
+      "check_attempt":1.0,
+      "display_name":"test-service-check",
+      "last_hard_state":3.0,
+      "last_hard_state_change":1547386923.0,
+      "last_state":"UNKNOWN",
+      "last_state_change":1547386745.0,
+      "last_state_type":"HARD",
+      "name":"test-service-check",
+      "output":"<Timeout exceeded.><Terminated by signal 9 (Killed).>",
+      "state":"UNKNOWN",
+      "state_type":"HARD",
+      "url":"https://monitoring.bla.tld/monitoring/host/show?host=test.host.tld&service=test-service-check"
+   },
+   "target":"service",
+   "timet":1547407185.0,
+   "type":"CUSTOM"
+}
