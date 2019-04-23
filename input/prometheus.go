@@ -3,6 +3,7 @@ package input
 import (
 	"bytes"
 	"encoding/json"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -78,6 +79,10 @@ func getColorcode(status string) string {
 }
 
 func shortenInstanceName(name string, pattern string) string {
+	if net.ParseIP(name) != nil {
+		// Don't try to shorten an IP address
+		return name
+	}
 	r := regexp.MustCompile(pattern)
 	match := r.FindStringSubmatch(name)
 	if len(match) > 1 {
