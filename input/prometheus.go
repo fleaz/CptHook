@@ -18,7 +18,7 @@ import (
 type PrometheusModule struct {
 	defaultChannel string
 	channel        chan IRCMessage
-	hostnameFilter string
+	hostnameFilter *regexp.Regexp
 }
 
 type alert struct {
@@ -78,13 +78,12 @@ func getColorcode(status string) string {
 	}
 }
 
-func shortenInstanceName(name string, pattern string) string {
+func shortenInstanceName(name string, pattern *regexp.Regexp) string {
 	if net.ParseIP(name) != nil {
 		// Don't try to shorten an IP address
 		return name
 	}
-	r := regexp.MustCompile(pattern)
-	match := r.FindStringSubmatch(name)
+	match := pattern.FindStringSubmatch(name)
 	if len(match) > 1 {
 		return match[1]
 	}
@@ -101,8 +100,11 @@ func (m PrometheusModule) GetChannelList() []string {
 
 func (m *PrometheusModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 	m.defaultChannel = c.GetString("channel")
-	m.channel = *channel
-	m.hostnameFilter = c.GetString("hostname_filter")
+	pattern, err := regexp.Compile(c.GetString("hostname_filter"))
+	if err != nil {
+		log.Fatalf("Error while parsing hostname_filter: %s", err)
+	}
+	m.hostnameFilter = pattern
 }
 
 func (m PrometheusModule) GetHandler() http.HandlerFunc {
@@ -202,9 +204,9 @@ func (m PrometheusModule) GetHandler() http.HandlerFunc {
 // getNameFromLabels tries to determine a meaningful name for an alert
 // If the alert has no 'instance' label, we use the 'alertname' which should always
 // be present in an alert
-func getNameFromLabels(alert *alert, filter string) string {
+func getNameFromLabels(alert *alert, pattern *regexp.Regexp) string {
 	if instance, ok := alert.Labels["instance"]; ok {
-		return shortenInstanceName(instance.(string), filter)
+		return shortenInstanceName(instance.(string), pattern)
 	} else if alertName, ok := alert.Labels["alertname"]; ok {
 		return alertName.(string)
 	} else {
