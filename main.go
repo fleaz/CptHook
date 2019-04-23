@@ -89,7 +89,7 @@ func main() {
 	for moduleName := range configurtaion.Modules {
 		module, err := createModuleObject(moduleName)
 		if err != nil {
-			log.Error(err)
+			log.Warn(err)
 			continue
 		}
 		log.Infof("Loaded module %q", moduleName)
