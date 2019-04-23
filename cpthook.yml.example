@@ -27,6 +27,7 @@ modules:
     gitlab:
         enabled: true
         default: "#defaultChannel"
+        commit_limit: 3
         groups:
             "myGitlabGroup":
                 - "#groupChannel"
