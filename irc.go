@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -14,8 +15,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var client *girc.Client
-var clientLock = &sync.RWMutex{}
+var (
+	client     *girc.Client
+	clientLock = &sync.RWMutex{}
+)
 
 func ircConnection(config *viper.Viper, channelList []string) {
 	clientConfig := girc.Config{
@@ -86,6 +89,19 @@ func ircConnection(config *viper.Viper, channelList []string) {
 		clientLock.Unlock()
 		for _, name := range channelList {
 			joinChannel(name)
+		}
+	})
+
+	client.Handlers.Add(girc.PRIVMSG, func(c *girc.Client, e girc.Event) {
+		if e.IsFromUser() {
+			log.Debugf("Received a query: %v", e)
+			message := "Hi. I'm a CptHook bot."
+			if version == "dev" {
+				message += fmt.Sprintf(" I was compiled by hand at %v", date)
+			} else {
+				message += fmt.Sprintf(" I am running v%v (Commit: %v, Builddate: %v)", version, commit, date)
+			}
+			c.Cmd.ReplyTo(e, message)
 		}
 	})
 
