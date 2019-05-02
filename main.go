@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -13,7 +14,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-var inputChannel = make(chan input.IRCMessage, 10)
+var (
+	inputChannel = make(chan input.IRCMessage, 10)
+	version      = "dev"
+	commit       = "none"
+	date         = time.Now().Format(time.RFC3339)
+)
 
 func configureLogLevel() {
 	if l := viper.GetString("logging.level"); l != "" {
@@ -89,7 +95,7 @@ func main() {
 	for moduleName := range configurtaion.Modules {
 		module, err := createModuleObject(moduleName)
 		if err != nil {
-			log.Error(err)
+			log.Warn(err)
 			continue
 		}
 		log.Infof("Loaded module %q", moduleName)

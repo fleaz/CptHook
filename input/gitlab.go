@@ -16,6 +16,7 @@ import (
 type GitlabModule struct {
 	channelMapping mapping
 	channel        chan IRCMessage
+	commitLimit    int
 }
 
 type mapping struct {
@@ -39,6 +40,19 @@ func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 		log.Fatal("Failed to unmarshal channelmapping into struct")
 	}
 	m.channel = *channel
+
+	if c.IsSet("commit_limit") {
+		commitLimit := c.GetInt("commit_limit")
+		if 0 < commitLimit && commitLimit <= 20 {
+			m.commitLimit = commitLimit
+		} else {
+			log.Debug("commit_limit was set to an invalid value. Using default of 3")
+			m.commitLimit = 3
+		}
+	} else {
+		m.commitLimit = 3
+	}
+
 }
 
 func (m GitlabModule) sendMessage(message string, projectName string, namespace string) {
@@ -389,8 +403,8 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
 
 					// Limit number of commit meessages to 3
-					if pushEvent.TotalCommits > 3 {
-						pushEvent.Commits = pushEvent.Commits[0:3]
+					if pushEvent.TotalCommits > m.commitLimit {
+						pushEvent.Commits = pushEvent.Commits[0:m.commitLimit]
 					}
 
 					for _, commit := range pushEvent.Commits {
@@ -422,8 +436,8 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
 					}
 
-					if pushEvent.TotalCommits > 3 {
-						var message = fmt.Sprintf("and %d more commits.", pushEvent.TotalCommits-3)
+					if pushEvent.TotalCommits > m.commitLimit {
+						var message = fmt.Sprintf("and %d more commits.", pushEvent.TotalCommits-m.commitLimit)
 						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.Namespace)
 					}
 				}
