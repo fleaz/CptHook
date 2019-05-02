@@ -104,6 +104,7 @@ func (m *PrometheusModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 	if err != nil {
 		log.Fatalf("Error while parsing hostname_filter: %s", err)
 	}
+	m.channel = *channel
 	m.hostnameFilter = pattern
 }
 
