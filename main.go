@@ -110,9 +110,17 @@ func main() {
 	go ircConnection(viper.Sub("irc"), channelList)
 
 	// Start HTTP server
+	srv := &http.Server{
+		Addr:         viper.GetString("http.listen"),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+	srv.SetKeepAlivesEnabled(false)
+
 	log.WithFields(log.Fields{
 		"listen": viper.GetString("http.listen"),
 	}).Info("Started HTTP Server")
-	log.Fatal(http.ListenAndServe(viper.GetString("http.listen"), nil))
+
+	log.Fatal(srv.ListenAndServe(), nil)
 
 }
