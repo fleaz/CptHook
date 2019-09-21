@@ -1,7 +1,7 @@
 ---
 language: go
 go:
-  - "1.10"
+  - "1.12"
   
 services:
   - docker
@@ -10,10 +10,6 @@ env:
   global:
     - IMAGE="fleaz/cpthook"
     - COMMIT=${TRAVIS_COMMIT::8}
-
-before_install:
-  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh  
-  - dep ensure
 
 script:
   - cp cpthook.yml.example cpthook.yml
