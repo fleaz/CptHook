@@ -20,12 +20,15 @@ irc:
         password: "VerySecure!"
 
 modules:
-    prometheus:
-        enabled: true
+    my-prom-endpoint:
+        endpoint: "/prom"
+        type: "prometheus"
         channel: "#prometheusChannel"
         hostname_filter: "(\\w*)\\.company.com:\\d{4}"
+
     gitlab:
-        enabled: true
+        endpoint: "/gitlab"
+        type: "gitlab"
         default: "#defaultChannel"
         commit_limit: 3
         groups:
@@ -35,15 +38,22 @@ modules:
             "myGitlabGroup/mySpecialGitlabProject":
                 - "#specificChannel"
     simple:
-        enabled: True
+        endpoint: "/simple"
+        type: "simple"
         default_channel: "#defaultChannel"
-    icinga2:
-      enabled: True
-      default: "#monitoring"
-      hostgroups:
-          "webservers":
-              - "#monitoring-web"
-      explicit:
-          "host.example.tld":
-              - "#monitoring-example"
 
+    another-simple:
+        endpoint: "/simple2"
+        type: "simple"
+        default_channel: "#defaultChannel"
+
+    icinga2:
+        endpoint: "/betterthannagios"
+        type: "icinga"
+        default: "#monitoring"
+        hostgroups:
+            "webservers":
+                - "#monitoring-web"
+        explicit:
+            "host.example.tld":
+                - "#monitoring-example"

@@ -98,10 +98,6 @@ func (m GitlabModule) GetChannelList() []string {
 	return all
 }
 
-func (m GitlabModule) GetEndpoint() string {
-	return "/gitlab"
-}
-
 func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 	const pushCompareString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/compare/{{ .BeforeCommit }}...{{ .AfterCommit }}"

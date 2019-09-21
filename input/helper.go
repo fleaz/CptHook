@@ -10,7 +10,6 @@ import (
 type Module interface {
 	Init(c *viper.Viper, channel *chan IRCMessage)
 	GetChannelList() []string
-	GetEndpoint() string
 	GetHandler() http.HandlerFunc
 }
 

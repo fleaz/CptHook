@@ -3,12 +3,13 @@ package input
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/dustin/go-humanize"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/dustin/go-humanize"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -199,10 +200,6 @@ func (m Icinga2Module) GetChannelList() []string {
 	}
 	all = append(all, m.channelMapping.DefaultChannel)
 	return all
-}
-
-func (m Icinga2Module) GetEndpoint() string {
-	return "/icinga2"
 }
 
 func (m Icinga2Module) GetHandler() http.HandlerFunc {

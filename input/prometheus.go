@@ -90,10 +90,6 @@ func shortenInstanceName(name string, pattern *regexp.Regexp) string {
 	return name
 }
 
-func (m PrometheusModule) GetEndpoint() string {
-	return "/prometheus"
-}
-
 func (m PrometheusModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }

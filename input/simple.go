@@ -23,10 +23,6 @@ func (m SimpleModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }
 
-func (m SimpleModule) GetEndpoint() string {
-	return "/simple"
-}
-
 func (m SimpleModule) GetHandler() http.HandlerFunc {
 
 	return func(wr http.ResponseWriter, req *http.Request) {
