@@ -1,14 +1,14 @@
 package input
 
 import (
-	"time"
 	"bytes"
-	"strings"
-	"net/http"
-	"text/template"
 	"encoding/json"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
+	"net/http"
+	"strings"
+	"text/template"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -27,7 +27,7 @@ func AgoString(t time.Time) string {
 
 func ColorHostState(s string) string {
 	HostState := map[string]string{
-		"UP": "\x0303Up\x03",
+		"UP":   "\x0303Up\x03",
 		"DOWN": "\x0304Down\x03",
 	}
 	return HostState[s]
@@ -35,10 +35,10 @@ func ColorHostState(s string) string {
 
 func ColorServiceState(s string) string {
 	ServiceState := map[string]string{
-		"UNKNOWN": "\x0313Unknown\x03",
+		"UNKNOWN":  "\x0313Unknown\x03",
 		"CRITICAL": "\x0304Critical\x03",
-		"WARNING": "\x0308Warning\x03",
-		"OK": "\x0303Ok\x03",
+		"WARNING":  "\x0308Warning\x03",
+		"OK":       "\x0303Ok\x03",
 	}
 	return ServiceState[s]
 }
@@ -60,25 +60,24 @@ type Host struct {
 }
 
 func (h Host) ColoredState() string {
-	return ColorHostState(h.State);
+	return ColorHostState(h.State)
 }
 
 func (h Host) ColoredLastState() string {
-	return ColorServiceState(h.LastState);
+	return ColorServiceState(h.LastState)
 }
 
 func (h Host) LastStateChange() time.Time {
-	return JsonToTime(h.LastStateChangeStr);
+	return JsonToTime(h.LastStateChangeStr)
 }
 
 func (h Host) LastHardStateChange() time.Time {
-	return JsonToTime(h.LastHardStateChangeStr);
+	return JsonToTime(h.LastHardStateChangeStr)
 }
 
 func (h Host) AgoString() string {
-	return AgoString(h.LastStateChange());
+	return AgoString(h.LastStateChange())
 }
-
 
 type Service struct {
 	CheckAttempt           float32     `json:"check_attempt"`
@@ -96,25 +95,24 @@ type Service struct {
 }
 
 func (s Service) ColoredState() string {
-	return ColorServiceState(s.State);
+	return ColorServiceState(s.State)
 }
 
 func (s Service) ColoredLastState() string {
-	return ColorServiceState(s.LastState);
+	return ColorServiceState(s.LastState)
 }
 
 func (s Service) LastStateChange() time.Time {
-	return JsonToTime(s.LastStateChangeStr);
+	return JsonToTime(s.LastStateChangeStr)
 }
 
 func (s Service) LastHardStateChange() time.Time {
-	return JsonToTime(s.LastHardStateChangeStr);
+	return JsonToTime(s.LastHardStateChangeStr)
 }
 
 func (s Service) AgoString() string {
-	return AgoString(s.LastStateChange());
+	return AgoString(s.LastStateChange())
 }
-
 
 type Notification struct {
 	Author    string      `json:"author"`
@@ -127,7 +125,6 @@ type Notification struct {
 	Service   Service     `json:"service"`
 	Channels  []string    `json:"channels"`
 }
-
 
 type Icinga2Module struct {
 	channelMapping hgmapping
@@ -298,59 +295,59 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 
 		switch notification.Target {
 
-			case "service":
-				log.Printf("[icinga2] Got a Hook for a Service Event")
+		case "service":
+			log.Printf("[icinga2] Got a Hook for a Service Event")
 
-				if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
-					err = serviceAckTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else if notification.Type == "RECOVERY" { // Recovery
-					err = serviceRecoveryTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else if notification.Service.LastStateType != notification.Service.StateType { // State entered
-					err = serviceStateEnteredTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-					buf.Reset()
-					err = serviceOutputTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else if notification.Service.LastState == notification.Service.State { // Renotification
-					err = serviceStateTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else { // State changed
-					err = serviceStateChangeTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-					buf.Reset()
-					err = serviceOutputTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				}
+			if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
+				err = serviceAckTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else if notification.Type == "RECOVERY" { // Recovery
+				err = serviceRecoveryTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else if notification.Service.LastStateType != notification.Service.StateType { // State entered
+				err = serviceStateEnteredTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+				buf.Reset()
+				err = serviceOutputTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else if notification.Service.LastState == notification.Service.State { // Renotification
+				err = serviceStateTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else { // State changed
+				err = serviceStateChangeTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+				buf.Reset()
+				err = serviceOutputTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			}
 
-			case "host":
-				log.Printf("[icinga2] Got a Hook for a Host Event")
+		case "host":
+			log.Printf("[icinga2] Got a Hook for a Host Event")
 
-				if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
-					err = hostAckTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else if notification.Type == "RECOVERY" { // Recovery
-					err = hostRecoveryTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else if notification.Host.LastStateType != notification.Host.StateType { // State entered
-					err = hostStateEnteredTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-					buf.Reset()
-					err = hostOutputTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else if notification.Host.LastState == notification.Host.State { // Renotification
-					err = hostStateTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				} else { // State changed
-					err = hostStateChangeTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-					buf.Reset()
-					err = hostOutputTemplate.Execute(&buf, &notification)
-					m.sendMessage(buf.String(), notification)
-				}
-			default:
-				log.Printf("[icinga2] Unknown event: %s", notification.Target)
+			if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
+				err = hostAckTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else if notification.Type == "RECOVERY" { // Recovery
+				err = hostRecoveryTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else if notification.Host.LastStateType != notification.Host.StateType { // State entered
+				err = hostStateEnteredTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+				buf.Reset()
+				err = hostOutputTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else if notification.Host.LastState == notification.Host.State { // Renotification
+				err = hostStateTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			} else { // State changed
+				err = hostStateChangeTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+				buf.Reset()
+				err = hostOutputTemplate.Execute(&buf, &notification)
+				m.sendMessage(buf.String(), notification)
+			}
+		default:
+			log.Printf("[icinga2] Unknown event: %s", notification.Target)
 		}
 
 	}
