@@ -87,7 +87,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
 		clientLock.Unlock()
-		for _, name := range channelList {
+		for _, name := range removeDuplicates(channelList) {
 			joinChannel(name)
 		}
 	})
@@ -117,6 +117,25 @@ func ircConnection(config *viper.Viper, channelList []string) {
 		}
 	}
 
+}
+
+func contains(e string, slice []string) bool {
+	for _, x := range slice {
+		if x == e {
+			return true
+		}
+	}
+	return false
+}
+
+func removeDuplicates(input []string) []string {
+	var output []string
+	for _, element := range input {
+		if !contains(element, output) {
+			output = append(output, element)
+		}
+	}
+	return output
 }
 
 func channelReceiver() {
