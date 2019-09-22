@@ -1,0 +1,33 @@
+modules:
+    prometheus:
+        endpoint: "/prom"
+        type: "prometheus"
+        channel: "#prometheusChannel"
+        hostname_filter: "(\\w*)\\.company.com:\\d{4}"
+
+    gitlab:
+        endpoint: "/gitlab"
+        type: "gitlab"
+        default: "#defaultChannel"
+        commit_limit: 3
+        groups:
+            "myGitlabGroup":
+                - "#groupChannel"
+        explicit:
+            "myGitlabGroup/mySpecialGitlabProject":
+                - "#specificChannel"
+    simple:
+        endpoint: "/simple"
+        type: "simple"
+        default_channel: "#defaultChannel"
+
+    icinga2:
+        endpoint: "/betterthannagios"
+        type: "icinga"
+        default: "#monitoring"
+        hostgroups:
+            "webservers":
+                - "#monitoring-web"
+        explicit:
+            "host.example.tld":
+                - "#monitoring-example"
