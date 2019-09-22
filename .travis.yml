@@ -13,7 +13,7 @@ env:
 
 script:
   - cp cpthook.yml.example cpthook.yml
-  - go test ./...
+  - go test ./... -v
   - CGO_ENABLED="0" GOARCH="amd64" GOOS="linux" go build -a -installsuffix cgo -o CptHook
   - docker build -f Dockerfile -t $IMAGE .
 
