@@ -138,7 +138,7 @@ func main() {
 			log.Warn(err)
 			continue
 		}
-		log.Infof("Loaded block %q (Type %q, Endpoint %q)", blockName, blockConfig.Type, blockConfig.Endpoint)
+		log.Infof("Loaded block %q from config (Type %q, Endpoint %q)", blockName, blockConfig.Type, blockConfig.Endpoint)
 		configPath := fmt.Sprintf("modules.%s", blockName)
 		module.Init(viper.Sub(configPath), &inputChannel)
 		channelList = append(channelList, module.GetChannelList()...)
