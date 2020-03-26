@@ -35,10 +35,19 @@ func contains(mapping map[string][]string, entry string) bool {
 }
 
 func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
-	err := c.Unmarshal(&m.channelMapping)
+	err := c.UnmarshalKey("default", &m.channelMapping.DefaultChannel)
 	if err != nil {
-		log.Fatal("Failed to unmarshal channelmapping into struct")
+		log.Fatal("Failed to unmarshal default-channelmapping into struct")
 	}
+	err = c.UnmarshalKey("groups", &m.channelMapping.GroupMappings)
+	if err != nil {
+		log.Fatal("Failed to unmarshal group-channelmapping into struct")
+	}
+	err = c.UnmarshalKey("explicit", &m.channelMapping.ExplicitMappings)
+	if err != nil {
+		log.Fatal("Failed to unmarshal explicit-channelmapping into struct")
+	}
+
 	m.channel = *channel
 
 	if c.IsSet("commit_limit") {
