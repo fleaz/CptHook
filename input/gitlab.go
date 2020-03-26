@@ -55,7 +55,7 @@ func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 		if 0 < commitLimit && commitLimit <= 20 {
 			m.commitLimit = commitLimit
 		} else {
-			log.Debug("commit_limit was set to an invalid value. Using default of 3")
+			log.Warn("commit_limit was set to an invalid value. Using default of 3")
 			m.commitLimit = 3
 		}
 	} else {
@@ -84,6 +84,11 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 		var event IRCMessage
 		event.Messages = append(event.Messages, message)
 		event.Channel = channelName
+		event.generateID()
+		log.WithFields(log.Fields{
+			"MsgID":  event.ID,
+			"Module": "Gitlab",
+		}).Info("Dispatching message to IRC handler")
 		m.channel <- event
 	}
 
@@ -189,11 +194,13 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 	}
 
 	return func(wr http.ResponseWriter, req *http.Request) {
-		log.Debug("Got a request for the GitlabModule")
 		defer req.Body.Close()
 		decoder := json.NewDecoder(req.Body)
 
 		var eventType = req.Header.Get("X-Gitlab-Event")
+		log.WithFields(log.Fields{
+			"EventType": eventType,
+		}).Debug("Got a request for the GitlabModule")
 
 		type Project struct {
 			Name      string `json:"name"`
@@ -287,7 +294,6 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 		switch eventType {
 
 		case "Pipeline Hook":
-			log.Printf("Got a Hook for a Pipeline Event")
 			var pipelineEvent PipelineEvent
 			if err := decoder.Decode(&pipelineEvent); err != nil {
 				log.Error(err)
@@ -319,7 +325,6 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			}
 
 		case "Job Hook":
-			log.Printf("Got a Hook for a Job Event")
 			var jobEvent JobEvent
 			if err := decoder.Decode(&jobEvent); err != nil {
 				log.Error(err)
@@ -344,7 +349,6 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			m.sendMessage(buf.String(), jobEvent.Repository.Name, namespace)
 
 		case "Merge Request Hook", "Merge Request Event":
-			log.Printf("Got Hook for a Merge Request")
 			var mergeEvent MergeEvent
 			if err := decoder.Decode(&mergeEvent); err != nil {
 				log.Error(err)
@@ -358,7 +362,6 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.Namespace)
 
 		case "Issue Hook", "Issue Event":
-			log.Printf("Got Hook for an Issue")
 			var issueEvent IssueEvent
 			if err := decoder.Decode(&issueEvent); err != nil {
 				log.Error(err)
@@ -372,7 +375,6 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.Namespace)
 
 		case "Push Hook", "Push Event":
-			log.Printf("Got Hook for a Push Event")
 			var pushEvent PushEvent
 			if err := decoder.Decode(&pushEvent); err != nil {
 				log.Error(err)
@@ -449,7 +451,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			}
 
 		default:
-			log.Printf("Unknown event: %s", eventType)
+			log.WithFields(log.Fields{
+				"EventType": eventType,
+			}).Warn("Can't handle this event type")
 		}
 
 	}

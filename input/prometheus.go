@@ -191,6 +191,11 @@ func (m PrometheusModule) GetHandler() http.HandlerFunc {
 				_ = hostListTemplate.Execute(&buf, &instanceList)
 				event.Messages = append(event.Messages, buf.String())
 				event.Channel = m.defaultChannel
+				event.generateID()
+				log.WithFields(log.Fields{
+					"MsgID":  event.ID,
+					"Module": "Prometheus",
+				}).Info("Dispatching message to IRC handler")
 				m.channel <- event
 			}
 		}

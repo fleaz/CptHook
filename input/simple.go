@@ -45,9 +45,15 @@ func (m SimpleModule) GetHandler() http.HandlerFunc {
 		}
 
 		// Send message
-		m.channel <- IRCMessage{
+		msg := IRCMessage{
 			Messages: lines,
 			Channel:  channel,
 		}
+		msg.generateID()
+		log.WithFields(log.Fields{
+			"MsgID":  msg.ID,
+			"Module": "Simple",
+		}).Info("Dispatching message to IRC handler")
+		m.channel <- msg
 	}
 }

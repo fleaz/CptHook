@@ -92,6 +92,18 @@ func validateConfig(c Configuration) {
 
 }
 
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.WithFields(log.Fields{
+			"remote": r.RemoteAddr,
+			"method": r.Method,
+			"host":   r.Host,
+			"uri":    r.URL,
+		}).Debug("Received HTTP request")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	confDirPtr := flag.String("config", "/etc/cpthook.yml", "Path to the configfile")
 	flag.Parse()
@@ -130,8 +142,7 @@ func main() {
 		configPath := fmt.Sprintf("modules.%s", blockName)
 		module.Init(viper.Sub(configPath), &inputChannel)
 		channelList = append(channelList, module.GetChannelList()...)
-		http.HandleFunc(blockConfig.Endpoint, module.GetHandler())
-
+		http.HandleFunc(blockConfig.Endpoint, loggingMiddleware(module.GetHandler()))
 	}
 
 	// Start IRC connection

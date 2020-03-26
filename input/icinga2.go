@@ -180,6 +180,11 @@ func (m Icinga2Module) sendMessage(message string, notification Notification) {
 		var event IRCMessage
 		event.Messages = append(event.Messages, message)
 		event.Channel = channelName
+		event.generateID()
+		log.WithFields(log.Fields{
+			"MsgID":  event.ID,
+			"Module": "Icinga2",
+		}).Info("Dispatching message to IRC handler")
 		m.channel <- event
 	}
 
@@ -279,7 +284,6 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 	}
 
 	return func(wr http.ResponseWriter, req *http.Request) {
-		log.Debug("[icinga2] Got a request for the Icinga2Module")
 		defer req.Body.Close()
 		decoder := json.NewDecoder(req.Body)
 
@@ -290,11 +294,13 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 			return
 		}
 
+		log.WithFields(log.Fields{
+			"event": notification.Target,
+		}).Warn("Got a request for the Icinga2Module")
+
 		switch notification.Target {
 
 		case "service":
-			log.Printf("[icinga2] Got a Hook for a Service Event")
-
 			if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
 				err = serviceAckTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
@@ -319,8 +325,6 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 			}
 
 		case "host":
-			log.Printf("[icinga2] Got a Hook for a Host Event")
-
 			if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
 				err = hostAckTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
@@ -344,7 +348,9 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 				m.sendMessage(buf.String(), notification)
 			}
 		default:
-			log.Printf("[icinga2] Unknown event: %s", notification.Target)
+			log.WithFields(log.Fields{
+				"event": notification.Target,
+			}).Warn("Unknown event")
 		}
 
 	}
