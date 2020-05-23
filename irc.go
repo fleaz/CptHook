@@ -23,10 +23,11 @@ var (
 
 func ircConnection(config *viper.Viper, channelList []string) {
 	clientConfig := girc.Config{
-		Server: config.GetString("host"),
-		Port:   config.GetInt("port"),
-		Nick:   config.GetString("nickname"),
-		User:   config.GetString("nickname"),
+		Server:    config.GetString("host"),
+		Port:      config.GetInt("port"),
+		Nick:      config.GetString("nickname"),
+		User:      config.GetString("nickname"),
+		PingDelay: 30 * time.Second,
 	}
 
 	if config.IsSet("auth") {
