@@ -25,13 +25,22 @@ type mapping struct {
 	ExplicitMappings map[string][]string `mapstructure:"explicit"`
 }
 
-func contains(mapping map[string][]string, entry string) bool {
+func contains(mapping map[string][]string, entry string) []string {
 	for k := range mapping {
 		if k == entry {
-			return true
+			return mapping[k]
 		}
 	}
-	return false
+	return nil
+}
+
+func prefixContains(mapping map[string][]string, entry string) []string {
+	for k := range mapping {
+		if strings.HasPrefix(entry, k) {
+			return mapping[k]
+		}
+	}
+	return nil
 }
 
 func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
@@ -64,16 +73,15 @@ func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 
 }
 
-func (m GitlabModule) sendMessage(message string, projectName string, namespace string) {
+func (m GitlabModule) sendMessage(message string, projectName string, pathWithNamespace string) {
 	var channelNames []string
-	var fullProjectName = namespace + "/" + projectName
 
-	if contains(m.channelMapping.ExplicitMappings, fullProjectName) { // Check if explizit mapping exists
-		for _, channelName := range m.channelMapping.ExplicitMappings[fullProjectName] {
+	if list := contains(m.channelMapping.ExplicitMappings, pathWithNamespace); len(list) > 0 { // Check if explizit mapping exists
+		for _, channelName := range m.channelMapping.ExplicitMappings[pathWithNamespace] {
 			channelNames = append(channelNames, channelName)
 		}
-	} else if contains(m.channelMapping.GroupMappings, namespace) { // Check if group mapping exists
-		for _, channelName := range m.channelMapping.GroupMappings[namespace] {
+	} else if list := prefixContains(m.channelMapping.GroupMappings, pathWithNamespace); len(list) > 0 { // Check if group mapping exists
+		for _, channelName := range list {
 			channelNames = append(channelNames, channelName)
 		}
 	} else { // Fall back to default channel
@@ -203,9 +211,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 		}).Debug("Got a request for the GitlabModule")
 
 		type Project struct {
-			Name      string `json:"name"`
-			Namespace string `json:"namespace"`
-			WebURL    string `json:"web_url"`
+			Name              string `json:"name"`
+			PathWithNamespace string `json:"path_with_namespace"`
+			WebURL            string `json:"web_url"`
 		}
 
 		type User struct {
@@ -314,14 +322,14 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
 				err = pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
-				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
 
 			} else if pipelineEvent.Pipeline.Status == "success" || pipelineEvent.Pipeline.Status == "failed" {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
 				err = pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
-				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
 			}
 
 		case "Job Hook":
@@ -340,13 +348,17 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			jobEvent.Commit = jobEvent.Commit[0:7]
 
 			// parse namespace from Git URL
-			namespace := strings.Split(strings.Split(jobEvent.Repository.URL, ":")[1], "/")[0]
+			// For some reason the JobEvent doesn't provides the normal
+			// namespace and path variables like the other jobs so we
+			// have to become creative
+			pathWithNamespace := strings.Split(strings.Split(jobEvent.Repository.URL, ":")[1], ".")[0]
+			fmt.Println(pathWithNamespace)
 
 			// colorize status
 			jobEvent.Status = JobStatus[jobEvent.Status]
 
 			err = jobCompleteTemplate.Execute(&buf, &jobEvent)
-			m.sendMessage(buf.String(), jobEvent.Repository.Name, namespace)
+			m.sendMessage(buf.String(), jobEvent.Repository.Name, pathWithNamespace)
 
 		case "Merge Request Hook", "Merge Request Event":
 			var mergeEvent MergeEvent
@@ -359,7 +371,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			err = mergeTemplate.Execute(&buf, &mergeEvent)
 
-			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.Namespace)
+			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.PathWithNamespace)
 
 		case "Issue Hook", "Issue Event":
 			var issueEvent IssueEvent
@@ -372,7 +384,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			err = issueTemplate.Execute(&buf, &issueEvent)
 
-			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.Namespace)
+			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.PathWithNamespace)
 
 		case "Push Hook", "Push Event":
 			var pushEvent PushEvent
@@ -387,13 +399,13 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				// Branch was deleted
 				var buf bytes.Buffer
 				err = branchDeleteTemplate.Execute(&buf, &pushEvent)
-				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 			} else {
 				if pushEvent.BeforeCommit == NullCommit {
 					// Branch was created
 					var buf bytes.Buffer
 					err = branchCreateTemplate.Execute(&buf, &pushEvent)
-					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 				}
 
 				if pushEvent.TotalCommits > 0 {
@@ -407,7 +419,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 						err = pushCompareTemplate.Execute(&buf, &pushEvent)
 					}
 
-					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 
 					// Limit number of commit meessages to 3
 					if pushEvent.TotalCommits > m.commitLimit {
@@ -440,12 +452,12 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 							log.Printf("ERROR: %v", err)
 							return
 						}
-						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 					}
 
 					if pushEvent.TotalCommits > m.commitLimit {
 						var message = fmt.Sprintf("and %d more commits.", pushEvent.TotalCommits-m.commitLimit)
-						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.Namespace)
+						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 					}
 				}
 			}

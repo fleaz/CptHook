@@ -157,15 +157,15 @@ func (m *Icinga2Module) Init(c *viper.Viper, channel *chan IRCMessage) {
 func (m Icinga2Module) sendMessage(message string, notification Notification) {
 	var channelNames []string
 	var hostname = notification.Host.Name
-	if contains(m.channelMapping.ExplicitMappings, hostname) { // Check if explicit mapping exists
-		for _, channelName := range m.channelMapping.ExplicitMappings[hostname] {
+	if list := contains(m.channelMapping.ExplicitMappings, hostname); len(list) > 0 { // Check if explicit mapping exists
+		for _, channelName := range list {
 			channelNames = append(channelNames, channelName)
 		}
 	} else {
 		var found = false
 		for _, hostgroup := range notification.Host.HostGroups { // Check if hostgroup mapping exists
-			if contains(m.channelMapping.HostGroupMappings, hostgroup) {
-				for _, channelName := range m.channelMapping.HostGroupMappings[hostgroup] {
+			if list := contains(m.channelMapping.HostGroupMappings, hostgroup); len(list) > 0 {
+				for _, channelName := range list {
 					channelNames = append(channelNames, channelName)
 					found = true
 				}
