@@ -35,12 +35,21 @@ func contains(mapping map[string][]string, entry string) []string {
 }
 
 func prefixContains(mapping map[string][]string, entry string) []string {
+	// Start with -1 so we can also match a single groupname without sub-groups
+	length := -1
+	var target []string
 	for k := range mapping {
-		if strings.HasPrefix(entry, k) {
-			return mapping[k]
+
+		if strings.HasPrefix(entry, k) && len(strings.Split(k, "/")) > length {
+			target = mapping[k]
+			length = len(strings.Split(k, "/"))
 		}
 	}
-	return nil
+	if len(target) > 0 {
+		return target
+	} else {
+		return nil
+	}
 }
 
 func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
