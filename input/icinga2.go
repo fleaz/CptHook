@@ -223,65 +223,18 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 	const hostRecoveryString = "Host \x0312{{ .Host.DisplayName }}\x03 \x0303recovered\x03 from state {{ .Host.ColoredLastState }}"
 	const hostOutputString = "→ {{ .Host.Output }}"
 
-	serviceStateChangeTemplate, err := template.New("hostOutput").Parse(serviceStateChangeString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse serviceStateChange template: %v", err)
-	}
-
-	serviceStateEnteredTemplate, err := template.New("hostOutput").Parse(serviceStateEnteredString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse serviceStateEntered template: %v", err)
-	}
-
-	serviceStateTemplate, err := template.New("serviceState").Parse(serviceStateString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse serviceState template: %v", err)
-	}
-
-	serviceAckTemplate, err := template.New("serviceState").Parse(serviceAckString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse serviceAck template: %v", err)
-	}
-
-	serviceRecoveryTemplate, err := template.New("serviceState").Parse(serviceRecoveryString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse serviceRecovery template: %v", err)
-	}
-
-	serviceOutputTemplate, err := template.New("serviceOutput").Parse(serviceOutputString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse serviceOutput template: %v", err)
-	}
-
-	hostStateChangeTemplate, err := template.New("hostOutput").Parse(hostStateChangeString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse hostStateChange template: %v", err)
-	}
-
-	hostStateEnteredTemplate, err := template.New("hostOutput").Parse(hostStateEnteredString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse hostStateEntered template: %v", err)
-	}
-
-	hostStateTemplate, err := template.New("hostState").Parse(hostStateString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse hostState template: %v", err)
-	}
-
-	hostAckTemplate, err := template.New("serviceState").Parse(hostAckString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse hostAck template: %v", err)
-	}
-
-	hostRecoveryTemplate, err := template.New("serviceState").Parse(hostRecoveryString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse hostRecovery template: %v", err)
-	}
-
-	hostOutputTemplate, err := template.New("hostOutput").Parse(hostOutputString)
-	if err != nil {
-		log.Fatalf("[icinga2] Failed to parse hostOutput template: %v", err)
-	}
+	serviceStateChangeTemplate := template.Must(template.New("hostOutput").Parse(serviceStateChangeString))
+	serviceStateEnteredTemplate := template.Must(template.New("hostOutput").Parse(serviceStateEnteredString))
+	serviceStateTemplate := template.Must(template.New("serviceState").Parse(serviceStateString))
+	serviceAckTemplate := template.Must(template.New("serviceState").Parse(serviceAckString))
+	serviceRecoveryTemplate := template.Must(template.New("serviceState").Parse(serviceRecoveryString))
+	serviceOutputTemplate := template.Must(template.New("serviceOutput").Parse(serviceOutputString))
+	hostStateChangeTemplate := template.Must(template.New("hostOutput").Parse(hostStateChangeString))
+	hostStateEnteredTemplate := template.Must(template.New("hostOutput").Parse(hostStateEnteredString))
+	hostStateTemplate := template.Must(template.New("hostState").Parse(hostStateString))
+	hostAckTemplate := template.Must(template.New("serviceState").Parse(hostAckString))
+	hostRecoveryTemplate := template.Must(template.New("serviceState").Parse(hostRecoveryString))
+	hostOutputTemplate := template.Must(template.New("hostOutput").Parse(hostOutputString))
 
 	return func(wr http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -302,49 +255,49 @@ func (m Icinga2Module) GetHandler() http.HandlerFunc {
 
 		case "service":
 			if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
-				err = serviceAckTemplate.Execute(&buf, &notification)
+				serviceAckTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else if notification.Type == "RECOVERY" { // Recovery
-				err = serviceRecoveryTemplate.Execute(&buf, &notification)
+				serviceRecoveryTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else if notification.Service.LastStateType != notification.Service.StateType { // State entered
-				err = serviceStateEnteredTemplate.Execute(&buf, &notification)
+				serviceStateEnteredTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 				buf.Reset()
-				err = serviceOutputTemplate.Execute(&buf, &notification)
+				serviceOutputTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else if notification.Service.LastState == notification.Service.State { // Renotification
-				err = serviceStateTemplate.Execute(&buf, &notification)
+				serviceStateTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else { // State changed
-				err = serviceStateChangeTemplate.Execute(&buf, &notification)
+				serviceStateChangeTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 				buf.Reset()
-				err = serviceOutputTemplate.Execute(&buf, &notification)
+				serviceOutputTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			}
 
 		case "host":
 			if notification.Type == "ACKNOWLEDGEMENT" { // Acknowledge
-				err = hostAckTemplate.Execute(&buf, &notification)
+				hostAckTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else if notification.Type == "RECOVERY" { // Recovery
-				err = hostRecoveryTemplate.Execute(&buf, &notification)
+				hostRecoveryTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else if notification.Host.LastStateType != notification.Host.StateType { // State entered
-				err = hostStateEnteredTemplate.Execute(&buf, &notification)
+				hostStateEnteredTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 				buf.Reset()
-				err = hostOutputTemplate.Execute(&buf, &notification)
+				hostOutputTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else if notification.Host.LastState == notification.Host.State { // Renotification
-				err = hostStateTemplate.Execute(&buf, &notification)
+				hostStateTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			} else { // State changed
-				err = hostStateChangeTemplate.Execute(&buf, &notification)
+				hostStateChangeTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 				buf.Reset()
-				err = hostOutputTemplate.Execute(&buf, &notification)
+				hostOutputTemplate.Execute(&buf, &notification)
 				m.sendMessage(buf.String(), notification)
 			}
 		default:

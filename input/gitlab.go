@@ -160,55 +160,16 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 	const NullCommit = "0000000000000000000000000000000000000000"
 
-	pushCompareTemplate, err := template.New("push notification").Parse(pushCompareString)
-	if err != nil {
-		log.Fatalf("Failed to parse pushCompare template: %v", err)
-	}
-
-	pushCommitLogTemplate, err := template.New("push to new branch notification").Parse(pushCommitLogString)
-	if err != nil {
-		log.Fatalf("Failed to parse pushCommitLog template: %v", err)
-	}
-
-	branchCreateTemplate, err := template.New("branch creat notification").Parse(branchCreateString)
-	if err != nil {
-		log.Fatalf("Failed to parse branchDelete template: %v", err)
-	}
-
-	branchDeleteTemplate, err := template.New("branch delete notification").Parse(branchDeleteString)
-	if err != nil {
-		log.Fatalf("Failed to parse branchDelete template: %v", err)
-	}
-
-	commitTemplate, err := template.New("commit notification").Parse(commitString)
-	if err != nil {
-		log.Fatalf("Failed to parse commitString template: %v", err)
-	}
-
-	issueTemplate, err := template.New("issue notification").Parse(issueString)
-	if err != nil {
-		log.Fatalf("Failed to parse issueEvent template: %v", err)
-	}
-
-	mergeTemplate, err := template.New("merge notification").Parse(mergeString)
-	if err != nil {
-		log.Fatalf("Failed to parse mergeEvent template: %v", err)
-	}
-
-	pipelineCreateTemplate, err := template.New("pipeline create notification").Parse(pipelineCreateString)
-	if err != nil {
-		log.Fatalf("Failed to parse pipelineCreateEvent template: %v", err)
-	}
-
-	pipelineCompleteTemplate, err := template.New("pipeline complete notification").Parse(pipelineCompleteString)
-	if err != nil {
-		log.Fatalf("Failed to parse pipelineCompleteEvent template: %v", err)
-	}
-
-	jobCompleteTemplate, err := template.New("job complete notification").Parse(jobCompleteString)
-	if err != nil {
-		log.Fatalf("Failed to parse jobCompleteEvent template: %v", err)
-	}
+	pushCompareTemplate := template.Must(template.New("push notification").Parse(pushCompareString))
+	pushCommitLogTemplate := template.Must(template.New("push to new branch notification").Parse(pushCommitLogString))
+	branchCreateTemplate := template.Must(template.New("branch creat notification").Parse(branchCreateString))
+	branchDeleteTemplate := template.Must(template.New("branch delete notification").Parse(branchDeleteString))
+	commitTemplate := template.Must(template.New("commit notification").Parse(commitString))
+	issueTemplate := template.Must(template.New("issue notification").Parse(issueString))
+	mergeTemplate := template.Must(template.New("merge notification").Parse(mergeString))
+	pipelineCreateTemplate := template.Must(template.New("pipeline create notification").Parse(pipelineCreateString))
+	pipelineCompleteTemplate := template.Must(template.New("pipeline complete notification").Parse(pipelineCompleteString))
+	jobCompleteTemplate := template.Must(template.New("job complete notification").Parse(jobCompleteString))
 
 	return func(wr http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -330,14 +291,14 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
-				err = pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
+				pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
 				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
 
 			} else if pipelineEvent.Pipeline.Status == "success" || pipelineEvent.Pipeline.Status == "failed" {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
-				err = pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
+				pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
 				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
 			}
 
@@ -366,7 +327,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			// colorize status
 			jobEvent.Status = JobStatus[jobEvent.Status]
 
-			err = jobCompleteTemplate.Execute(&buf, &jobEvent)
+			jobCompleteTemplate.Execute(&buf, &jobEvent)
 			m.sendMessage(buf.String(), jobEvent.Repository.Name, pathWithNamespace)
 
 		case "Merge Request Hook", "Merge Request Event":
@@ -378,7 +339,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			mergeEvent.Merge.Action = HookActions[mergeEvent.Merge.Action]
 
-			err = mergeTemplate.Execute(&buf, &mergeEvent)
+			mergeTemplate.Execute(&buf, &mergeEvent)
 
 			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.PathWithNamespace)
 
@@ -391,7 +352,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			issueEvent.Issue.Action = HookActions[issueEvent.Issue.Action]
 
-			err = issueTemplate.Execute(&buf, &issueEvent)
+			issueTemplate.Execute(&buf, &issueEvent)
 
 			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.PathWithNamespace)
 
@@ -407,13 +368,13 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			if pushEvent.AfterCommit == NullCommit {
 				// Branch was deleted
 				var buf bytes.Buffer
-				err = branchDeleteTemplate.Execute(&buf, &pushEvent)
+				branchDeleteTemplate.Execute(&buf, &pushEvent)
 				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 			} else {
 				if pushEvent.BeforeCommit == NullCommit {
 					// Branch was created
 					var buf bytes.Buffer
-					err = branchCreateTemplate.Execute(&buf, &pushEvent)
+					branchCreateTemplate.Execute(&buf, &pushEvent)
 					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 				}
 
@@ -421,11 +382,11 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 					// when the beforeCommit does not exist, we can't link to a compare without skipping the first commit
 					var buf bytes.Buffer
 					if pushEvent.BeforeCommit == NullCommit {
-						err = pushCommitLogTemplate.Execute(&buf, &pushEvent)
+						pushCommitLogTemplate.Execute(&buf, &pushEvent)
 					} else {
 						pushEvent.BeforeCommit = pushEvent.BeforeCommit[0:7]
 						pushEvent.AfterCommit = pushEvent.AfterCommit[0:7]
-						err = pushCompareTemplate.Execute(&buf, &pushEvent)
+						pushCompareTemplate.Execute(&buf, &pushEvent)
 					}
 
 					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
@@ -455,7 +416,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 						}
 
 						var buf bytes.Buffer
-						err = commitTemplate.Execute(&buf, &context)
+						err := commitTemplate.Execute(&buf, &context)
 
 						if err != nil {
 							log.Printf("ERROR: %v", err)
