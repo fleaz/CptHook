@@ -133,13 +133,13 @@ type Icinga2Module struct {
 }
 
 type hgmapping struct {
-	DefaultChannel    string              `mapstructure:"default"`
+	DefaultChannel    string              `mapstructure:"default_channel"`
 	HostGroupMappings map[string][]string `mapstructure:"hostgroups"`
 	ExplicitMappings  map[string][]string `mapstructure:"explicit"`
 }
 
 func (m *Icinga2Module) Init(c *viper.Viper, channel *chan IRCMessage) {
-	err := c.UnmarshalKey("default", &m.channelMapping.DefaultChannel)
+	err := c.UnmarshalKey("default_channel", &m.channelMapping.DefaultChannel)
 	if err != nil {
 		log.Panic(err)
 	}

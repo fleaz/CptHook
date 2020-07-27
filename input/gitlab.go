@@ -20,7 +20,7 @@ type GitlabModule struct {
 }
 
 type mapping struct {
-	DefaultChannel   string              `mapstructure:"default"`
+	DefaultChannel   string              `mapstructure:"default_channel"`
 	GroupMappings    map[string][]string `mapstructure:"groups"`
 	ExplicitMappings map[string][]string `mapstructure:"explicit"`
 }
@@ -53,7 +53,7 @@ func prefixContains(mapping map[string][]string, entry string) []string {
 }
 
 func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
-	err := c.UnmarshalKey("default", &m.channelMapping.DefaultChannel)
+	err := c.UnmarshalKey("default_channel", &m.channelMapping.DefaultChannel)
 	if err != nil {
 		log.Fatal("Failed to unmarshal default-channelmapping into struct")
 	}

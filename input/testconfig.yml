@@ -8,7 +8,7 @@ modules:
     gitlab:
         endpoint: "/gitlab"
         type: "gitlab"
-        default: "#defaultChannel"
+        default_channel: "#defaultChannel"
         commit_limit: 3
         groups:
             "myGitlabGroup":
@@ -24,7 +24,7 @@ modules:
     icinga2:
         endpoint: "/betterthannagios"
         type: "icinga"
-        default: "#monitoring"
+        default_channel: "#monitoring"
         hostgroups:
             "webservers":
                 - "#monitoring-web"
