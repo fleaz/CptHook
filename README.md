@@ -3,37 +3,39 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/fleaz/CptHook)](https://goreportcard.com/report/github.com/fleaz/CptHook)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/fleaz/CptHook/blob/master/LICENSE)
 
-CptHook can be used as a single endpoint for all your webhook notifications which then get parsed and send to
-different IRC channels according to the configuration.
+CptHook provides a single endpoint where you can point all your webhook notifications to and get the nicely formatted in an IRC channel of your choice.
 
 Take a look at the [input](https://github.com/fleaz/CptHook/tree/master/input) folder to find out which services are
 already supported by CptHook.
 
-**If you have questions or problems visit #CptHook on HackInt** -> [WebChat](https://webirc.hackint.org/#irc://irc.hackint.org/#CptHook)
+**If you have questions or problems come chat with us in #CptHook on HackInt** -> [WebChat](https://webirc.hackint.org/#irc://irc.hackint.org/#CptHook)
 
 ## Installation
 
+
+### Manual
+
 **Requirements**
- * Go > 1.7
+ * Go >= 1.11
 
-You can either install CptHook manually
 ```
-go get -u github.com/fleaz/CptHook
-cp $GOPATH/bin/CptHook /usr/local/bin/CptHook
-vim /etc/cpthook.yml
-CptHook
+# go get -u github.com/fleaz/CptHook
+# cp $GOPATH/bin/CptHook /usr/local/bin/CptHook
+# vim /etc/cpthook.yml
+# CptHook
 ```
 
-or use the prebuild Docker container
+### Docker container
 
 ```
 vim cpthook.yml
 docker run --rm -it -v $(pwd)/cpthook.yml:/etc/cpthook.yml -p 8086:8086 fleaz/cpthook:stable
 ```
 
-or download the [prebuild binarys](https://github.com/fleaz/CptHook/releases/latest)
+### Prebuild binaries
+Visit the GitHub [release page](https://github.com/fleaz/CptHook/releases/latest) to download them.
 
-## Authentication
+## IRC authentication
 SASL support is available to authenticate to the server.
 The following methods are supported:
  - `SASL-Plain` uses plaintext username and password authentication
@@ -42,31 +44,32 @@ The following methods are supported:
 To use CertFP, a client certificate (`certfile`) and key (`keyfile`) must be specified in the `irc.ssl.client_cert`
 section and the `SASL-External` authentication method must be used.
 
-## Build a new module
-When you want to create a new module, e.g. for the service 'Foo', follow these steps to get started:
-  - Add a section 'foo' to `cpthook.yml.example`. Everything below `cpthook.foo` will be provided to your module. 
-  - Add a case to the `main.createModuleObject` function
-  - Create `foo.go` file in the `input` folder
-  - Implement the `Module` interface according to `input/helper.go`
 
-## Already available modules
+## Configuration
 
-**General configuration configuration**
+### General
+
+These settings are available for all modules
+
 ```
-- enabled
-Defines if CptHook should load this module
-- default_channel / default
-Defines a fallback channel where messages should go if no filtering has matched
+- endpoint
+Defines the URI where the module is reachable.
+
+- type
+The input module you want to initialize in this block.
+
+- default_channel
+Defines a fallback channel where messages should go if none of the defined filters has matched. Only used in modules which have some kind of routing for events, e.g. the Gitlab module.
 ```
 
 ### Prometheus
 Receives webhooks from Alertmanager.
 
-**Module specific configuration**
 ```
 - hostname_filter
-This regex is used to shorten the hostname of instance name in an alert. This regex should contain exactly one
-capture group which will be used as the hostname if the regex matches.
+This regex is used to shorten the hostname of instance name in an alert. This
+regex must contain exactly one capture group which will be used as the
+hostname if the regex matches.
 ```
 
 ### Gitlab
@@ -74,32 +77,39 @@ Receives webhooks from Gitlab. *Currently not all event types are implemented!* 
 module will first check if there is an explicit mapping in the configuration especially for this project. If yes,
 this channel will be used. If not, the module will look if there exists for the group. If yes, this channel will be
 used. If not, the `default_channel` will be used.
-**Module specific configuration**
 ```
 - groups
 This dictionary maps Gitlab groups to IRC-channels.
+
 - explicit
 This dictionary maps full project paths (groupname/projectname) to IRC-channels.
 ```
 
 ### Simple
 Receives arbitrary messages as text via a HTTP `POST` request and forwards this message line by line to a channel.
-The channel can be specified by the `channel` query parameter, otherwise the `default_channel` from the config will
+The channel can be specified per request by the `channel` query parameter, otherwise the `default_channel` from the config will
 be used.
 
 ### Icinga2
-Receives webhooks from Icinga2. Add [icinga2-notifications-webhook] to your icinga2 installation to send the
-required webhooks.
+Receives webhooks from Icinga2. Add [icinga2-notifications-webhook](https://git.s7t.de/ManiacTwister/icinga2-notifications-webhook) to your
+Icinga2 installation to send the required webhooks.
 
 When a webhook is received this module will first check if there is an explicit
 mapping in the configuration especially for this host. If yes, this channel will be used. If not, the module will
-look if there exists for the hostgroup. If yes, this channel will be used. If not, the `default` channel will be used.
+look if there exists for the hostgroup. If yes, this channel will be used. If not, the `default_channel` channel will be used.
 
-**Module specific configuration**
 ```
 - hostgroups
 This dictionary maps Icinga2 hostgroups to IRC-channels.
+
 - explicit
 This dictionary maps hostnames to IRC-channels.
 ```
-[icinga2-notifications-webhook]: https://git.s7t.de/ManiacTwister/icinga2-notifications-webhook
+
+## Build a new module
+When you want to create a new module, e.g. for the service 'Foo', follow these steps to get started:
+  - Add a section 'foo' to `cpthook.yml.example`. Everything below `cpthook.foo` will be provided to your module. 
+  - Add a case to the `main.createModuleObject` function
+  - Create `foo.go` and `foo_test.go` files in the `input` folder
+  - Implement the `Module` interface according to `input/helper.go`
+  - Bonus task: Be a good programmer and write a test :)

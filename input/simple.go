@@ -23,10 +23,6 @@ func (m SimpleModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }
 
-func (m SimpleModule) GetEndpoint() string {
-	return "/simple"
-}
-
 func (m SimpleModule) GetHandler() http.HandlerFunc {
 
 	return func(wr http.ResponseWriter, req *http.Request) {
@@ -49,9 +45,15 @@ func (m SimpleModule) GetHandler() http.HandlerFunc {
 		}
 
 		// Send message
-		m.channel <- IRCMessage{
+		msg := IRCMessage{
 			Messages: lines,
 			Channel:  channel,
 		}
+		msg.generateID()
+		log.WithFields(log.Fields{
+			"MsgID":  msg.ID,
+			"Module": "Simple",
+		}).Info("Dispatching message to IRC handler")
+		m.channel <- msg
 	}
 }

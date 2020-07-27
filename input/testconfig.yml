@@ -1,26 +1,5 @@
-http:
-    listen: ":8086"
-
-logging:
-    level: "INFO"
-
-irc:
-    host: "irc.hackint.eu"
-    port: 6667
-    ssl:
-        enabled: true
-        cafile: "/etc/ssl/hackint.pem"
-        client_cert:
-            certfile: "/home/bot/bot.cert"
-            keyfile: "/home/bot/bot.key"
-    nickname: "webhook-bot"
-    auth:
-        method: SASL-Plain
-        username: "webhook-bot"
-        password: "VerySecure!"
-
 modules:
-    my-prom-endpoint:
+    prometheus:
         endpoint: "/prom"
         type: "prometheus"
         channel: "#prometheusChannel"
@@ -39,11 +18,6 @@ modules:
                 - "#specificChannel"
     simple:
         endpoint: "/simple"
-        type: "simple"
-        default_channel: "#defaultChannel"
-
-    another-simple:
-        endpoint: "/simple2"
         type: "simple"
         default_channel: "#defaultChannel"
 

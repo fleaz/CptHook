@@ -90,10 +90,6 @@ func shortenInstanceName(name string, pattern *regexp.Regexp) string {
 	return name
 }
 
-func (m PrometheusModule) GetEndpoint() string {
-	return "/prometheus"
-}
-
 func (m PrometheusModule) GetChannelList() []string {
 	return []string{m.defaultChannel}
 }
@@ -114,20 +110,9 @@ func (m PrometheusModule) GetHandler() http.HandlerFunc {
 	const resolvedTemplateString = "[{{ .ColorStart }}{{ .Status }}{{ .ColorEnd }}:{{ .InstanceCount }}] {{ .Alert.Labels.alertname}}"
 	const hostListTemplateString = "→ {{range $i, $instance := . }}{{if $i}}, {{end}}{{$instance.Name}}{{if $instance.Value}} ({{$instance.Value}}){{end}}{{end}}"
 
-	firingTemplate, err := template.New("notification").Parse(firingTemplateString)
-	if err != nil {
-		log.Fatalf("Failed to parse template: %v", err)
-	}
-
-	resolvedTemplate, err := template.New("notification").Parse(resolvedTemplateString)
-	if err != nil {
-		log.Fatalf("Failed to parse template: %v", err)
-	}
-
-	hostListTemplate, err := template.New("notification").Parse(hostListTemplateString)
-	if err != nil {
-		log.Fatalf("Failed to parse template: %v", err)
-	}
+	firingTemplate := template.Must(template.New("notification").Parse(firingTemplateString))
+	resolvedTemplate := template.Must(template.New("notification").Parse(resolvedTemplateString))
+	hostListTemplate := template.Must(template.New("notification").Parse(hostListTemplateString))
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("Got a request for the PrometheusModule")
@@ -195,6 +180,11 @@ func (m PrometheusModule) GetHandler() http.HandlerFunc {
 				_ = hostListTemplate.Execute(&buf, &instanceList)
 				event.Messages = append(event.Messages, buf.String())
 				event.Channel = m.defaultChannel
+				event.generateID()
+				log.WithFields(log.Fields{
+					"MsgID":  event.ID,
+					"Module": "Prometheus",
+				}).Info("Dispatching message to IRC handler")
 				m.channel <- event
 			}
 		}

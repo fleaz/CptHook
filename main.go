@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -44,7 +45,8 @@ type Configuration struct {
 }
 
 type InputModule struct {
-	Enalbed string `yaml:"enabled"`
+	Type     string `yaml:"type"`
+	Endpoint string `yaml:"endpoint"`
 }
 
 func createModuleObject(name string) (input.Module, error) {
@@ -60,10 +62,46 @@ func createModuleObject(name string) (input.Module, error) {
 	case "icinga2":
 		m = &input.Icinga2Module{}
 	default:
-		e = fmt.Errorf("found configuration for unknown module: %q", name)
+		e = fmt.Errorf("ignoring configuration for unknown module: %q", name)
 	}
 
 	return m, e
+}
+
+func validateConfig(c Configuration) {
+	var foundErrors []string
+
+	for blockName, blockConfig := range c.Modules {
+		if blockConfig.Type == "" {
+			foundErrors = append(foundErrors, fmt.Sprintf("Block %q is missing its type", blockName))
+		}
+		if blockConfig.Endpoint == "" {
+			foundErrors = append(foundErrors, fmt.Sprintf("Block %q is missing its endpoint", blockName))
+		}
+	}
+
+	if len(foundErrors) > 0 {
+		log.Error("Found the following errors in the configuration:")
+		for _, e := range foundErrors {
+			log.Error(e)
+		}
+		os.Exit(1)
+	} else {
+		log.Info("Configuration parsed without errors")
+	}
+
+}
+
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.WithFields(log.Fields{
+			"remote": r.RemoteAddr,
+			"method": r.Method,
+			"host":   r.Host,
+			"uri":    r.URL,
+		}).Debug("Received HTTP request")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -85,34 +123,43 @@ func main() {
 	configureLogLevel()
 
 	var channelList = []string{}
-	var configurtaion = Configuration{}
+	var config = Configuration{}
 
-	err = viper.Unmarshal(&configurtaion)
+	err = viper.Unmarshal(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for moduleName := range configurtaion.Modules {
-		module, err := createModuleObject(moduleName)
+	validateConfig(config)
+
+	for blockName, blockConfig := range config.Modules {
+		module, err := createModuleObject(blockConfig.Type)
 		if err != nil {
 			log.Warn(err)
 			continue
 		}
-		log.Infof("Loaded module %q", moduleName)
-		configPath := fmt.Sprintf("modules.%s", moduleName)
+		log.Infof("Loaded block %q from config (Type %q, Endpoint %q)", blockName, blockConfig.Type, blockConfig.Endpoint)
+		configPath := fmt.Sprintf("modules.%s", blockName)
 		module.Init(viper.Sub(configPath), &inputChannel)
 		channelList = append(channelList, module.GetChannelList()...)
-		http.HandleFunc(module.GetEndpoint(), module.GetHandler())
-
+		http.HandleFunc(blockConfig.Endpoint, loggingMiddleware(module.GetHandler()))
 	}
 
 	// Start IRC connection
 	go ircConnection(viper.Sub("irc"), channelList)
 
 	// Start HTTP server
+	srv := &http.Server{
+		Addr:         viper.GetString("http.listen"),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+	srv.SetKeepAlivesEnabled(false)
+
 	log.WithFields(log.Fields{
 		"listen": viper.GetString("http.listen"),
 	}).Info("Started HTTP Server")
-	log.Fatal(http.ListenAndServe(viper.GetString("http.listen"), nil))
+
+	log.Fatal(srv.ListenAndServe(), nil)
 
 }

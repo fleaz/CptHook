@@ -20,25 +20,52 @@ type GitlabModule struct {
 }
 
 type mapping struct {
-	DefaultChannel   string              `mapstructure:"default"`
+	DefaultChannel   string              `mapstructure:"default_channel"`
 	GroupMappings    map[string][]string `mapstructure:"groups"`
 	ExplicitMappings map[string][]string `mapstructure:"explicit"`
 }
 
-func contains(mapping map[string][]string, entry string) bool {
+func contains(mapping map[string][]string, entry string) []string {
 	for k := range mapping {
 		if k == entry {
-			return true
+			return mapping[k]
 		}
 	}
-	return false
+	return nil
+}
+
+func prefixContains(mapping map[string][]string, entry string) []string {
+	// Start with -1 so we can also match a single groupname without sub-groups
+	length := -1
+	var target []string
+	for k := range mapping {
+
+		if strings.HasPrefix(entry, k) && len(strings.Split(k, "/")) > length {
+			target = mapping[k]
+			length = len(strings.Split(k, "/"))
+		}
+	}
+	if len(target) > 0 {
+		return target
+	} else {
+		return nil
+	}
 }
 
 func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
-	err := c.Unmarshal(&m.channelMapping)
+	err := c.UnmarshalKey("default_channel", &m.channelMapping.DefaultChannel)
 	if err != nil {
-		log.Fatal("Failed to unmarshal channelmapping into struct")
+		log.Fatal("Failed to unmarshal default-channelmapping into struct")
 	}
+	err = c.UnmarshalKey("groups", &m.channelMapping.GroupMappings)
+	if err != nil {
+		log.Fatal("Failed to unmarshal group-channelmapping into struct")
+	}
+	err = c.UnmarshalKey("explicit", &m.channelMapping.ExplicitMappings)
+	if err != nil {
+		log.Fatal("Failed to unmarshal explicit-channelmapping into struct")
+	}
+
 	m.channel = *channel
 
 	if c.IsSet("commit_limit") {
@@ -46,7 +73,7 @@ func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 		if 0 < commitLimit && commitLimit <= 20 {
 			m.commitLimit = commitLimit
 		} else {
-			log.Debug("commit_limit was set to an invalid value. Using default of 3")
+			log.Warn("commit_limit was set to an invalid value. Using default of 3")
 			m.commitLimit = 3
 		}
 	} else {
@@ -55,16 +82,15 @@ func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 
 }
 
-func (m GitlabModule) sendMessage(message string, projectName string, namespace string) {
+func (m GitlabModule) sendMessage(message string, projectName string, pathWithNamespace string) {
 	var channelNames []string
-	var fullProjectName = namespace + "/" + projectName
 
-	if contains(m.channelMapping.ExplicitMappings, fullProjectName) { // Check if explizit mapping exists
-		for _, channelName := range m.channelMapping.ExplicitMappings[fullProjectName] {
+	if list := contains(m.channelMapping.ExplicitMappings, pathWithNamespace); len(list) > 0 { // Check if explizit mapping exists
+		for _, channelName := range m.channelMapping.ExplicitMappings[pathWithNamespace] {
 			channelNames = append(channelNames, channelName)
 		}
-	} else if contains(m.channelMapping.GroupMappings, namespace) { // Check if group mapping exists
-		for _, channelName := range m.channelMapping.GroupMappings[namespace] {
+	} else if list := prefixContains(m.channelMapping.GroupMappings, pathWithNamespace); len(list) > 0 { // Check if group mapping exists
+		for _, channelName := range list {
 			channelNames = append(channelNames, channelName)
 		}
 	} else { // Fall back to default channel
@@ -75,6 +101,11 @@ func (m GitlabModule) sendMessage(message string, projectName string, namespace 
 		var event IRCMessage
 		event.Messages = append(event.Messages, message)
 		event.Channel = channelName
+		event.generateID()
+		log.WithFields(log.Fields{
+			"MsgID":  event.ID,
+			"Module": "Gitlab",
+		}).Info("Dispatching message to IRC handler")
 		m.channel <- event
 	}
 
@@ -96,10 +127,6 @@ func (m GitlabModule) GetChannelList() []string {
 	all = append(all, m.channelMapping.DefaultChannel)
 
 	return all
-}
-
-func (m GitlabModule) GetEndpoint() string {
-	return "/gitlab"
 }
 
 func (m GitlabModule) GetHandler() http.HandlerFunc {
@@ -133,67 +160,30 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 	const NullCommit = "0000000000000000000000000000000000000000"
 
-	pushCompareTemplate, err := template.New("push notification").Parse(pushCompareString)
-	if err != nil {
-		log.Fatalf("Failed to parse pushCompare template: %v", err)
-	}
-
-	pushCommitLogTemplate, err := template.New("push to new branch notification").Parse(pushCommitLogString)
-	if err != nil {
-		log.Fatalf("Failed to parse pushCommitLog template: %v", err)
-	}
-
-	branchCreateTemplate, err := template.New("branch creat notification").Parse(branchCreateString)
-	if err != nil {
-		log.Fatalf("Failed to parse branchDelete template: %v", err)
-	}
-
-	branchDeleteTemplate, err := template.New("branch delete notification").Parse(branchDeleteString)
-	if err != nil {
-		log.Fatalf("Failed to parse branchDelete template: %v", err)
-	}
-
-	commitTemplate, err := template.New("commit notification").Parse(commitString)
-	if err != nil {
-		log.Fatalf("Failed to parse commitString template: %v", err)
-	}
-
-	issueTemplate, err := template.New("issue notification").Parse(issueString)
-	if err != nil {
-		log.Fatalf("Failed to parse issueEvent template: %v", err)
-	}
-
-	mergeTemplate, err := template.New("merge notification").Parse(mergeString)
-	if err != nil {
-		log.Fatalf("Failed to parse mergeEvent template: %v", err)
-	}
-
-	pipelineCreateTemplate, err := template.New("pipeline create notification").Parse(pipelineCreateString)
-	if err != nil {
-		log.Fatalf("Failed to parse pipelineCreateEvent template: %v", err)
-	}
-
-	pipelineCompleteTemplate, err := template.New("pipeline complete notification").Parse(pipelineCompleteString)
-	if err != nil {
-		log.Fatalf("Failed to parse pipelineCompleteEvent template: %v", err)
-	}
-
-	jobCompleteTemplate, err := template.New("job complete notification").Parse(jobCompleteString)
-	if err != nil {
-		log.Fatalf("Failed to parse jobCompleteEvent template: %v", err)
-	}
+	pushCompareTemplate := template.Must(template.New("push notification").Parse(pushCompareString))
+	pushCommitLogTemplate := template.Must(template.New("push to new branch notification").Parse(pushCommitLogString))
+	branchCreateTemplate := template.Must(template.New("branch creat notification").Parse(branchCreateString))
+	branchDeleteTemplate := template.Must(template.New("branch delete notification").Parse(branchDeleteString))
+	commitTemplate := template.Must(template.New("commit notification").Parse(commitString))
+	issueTemplate := template.Must(template.New("issue notification").Parse(issueString))
+	mergeTemplate := template.Must(template.New("merge notification").Parse(mergeString))
+	pipelineCreateTemplate := template.Must(template.New("pipeline create notification").Parse(pipelineCreateString))
+	pipelineCompleteTemplate := template.Must(template.New("pipeline complete notification").Parse(pipelineCompleteString))
+	jobCompleteTemplate := template.Must(template.New("job complete notification").Parse(jobCompleteString))
 
 	return func(wr http.ResponseWriter, req *http.Request) {
-		log.Debug("Got a request for the GitlabModule")
 		defer req.Body.Close()
 		decoder := json.NewDecoder(req.Body)
 
 		var eventType = req.Header.Get("X-Gitlab-Event")
+		log.WithFields(log.Fields{
+			"EventType": eventType,
+		}).Debug("Got a request for the GitlabModule")
 
 		type Project struct {
-			Name      string `json:"name"`
-			Namespace string `json:"namespace"`
-			WebURL    string `json:"web_url"`
+			Name              string `json:"name"`
+			PathWithNamespace string `json:"path_with_namespace"`
+			WebURL            string `json:"web_url"`
 		}
 
 		type User struct {
@@ -282,7 +272,6 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 		switch eventType {
 
 		case "Pipeline Hook":
-			log.Printf("Got a Hook for a Pipeline Event")
 			var pipelineEvent PipelineEvent
 			if err := decoder.Decode(&pipelineEvent); err != nil {
 				log.Error(err)
@@ -302,19 +291,18 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
-				err = pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
-				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace)
+				pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
 
 			} else if pipelineEvent.Pipeline.Status == "success" || pipelineEvent.Pipeline.Status == "failed" {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
-				err = pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
-				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.Namespace)
+				pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
 			}
 
 		case "Job Hook":
-			log.Printf("Got a Hook for a Job Event")
 			var jobEvent JobEvent
 			if err := decoder.Decode(&jobEvent); err != nil {
 				log.Error(err)
@@ -330,16 +318,19 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			jobEvent.Commit = jobEvent.Commit[0:7]
 
 			// parse namespace from Git URL
-			namespace := strings.Split(strings.Split(jobEvent.Repository.URL, ":")[1], "/")[0]
+			// For some reason the JobEvent doesn't provides the normal
+			// namespace and path variables like the other jobs so we
+			// have to become creative
+			pathWithNamespace := strings.Split(strings.Split(jobEvent.Repository.URL, ":")[1], ".")[0]
+			fmt.Println(pathWithNamespace)
 
 			// colorize status
 			jobEvent.Status = JobStatus[jobEvent.Status]
 
-			err = jobCompleteTemplate.Execute(&buf, &jobEvent)
-			m.sendMessage(buf.String(), jobEvent.Repository.Name, namespace)
+			jobCompleteTemplate.Execute(&buf, &jobEvent)
+			m.sendMessage(buf.String(), jobEvent.Repository.Name, pathWithNamespace)
 
 		case "Merge Request Hook", "Merge Request Event":
-			log.Printf("Got Hook for a Merge Request")
 			var mergeEvent MergeEvent
 			if err := decoder.Decode(&mergeEvent); err != nil {
 				log.Error(err)
@@ -348,12 +339,11 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			mergeEvent.Merge.Action = HookActions[mergeEvent.Merge.Action]
 
-			err = mergeTemplate.Execute(&buf, &mergeEvent)
+			mergeTemplate.Execute(&buf, &mergeEvent)
 
-			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.Namespace)
+			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.PathWithNamespace)
 
 		case "Issue Hook", "Issue Event":
-			log.Printf("Got Hook for an Issue")
 			var issueEvent IssueEvent
 			if err := decoder.Decode(&issueEvent); err != nil {
 				log.Error(err)
@@ -362,12 +352,11 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			issueEvent.Issue.Action = HookActions[issueEvent.Issue.Action]
 
-			err = issueTemplate.Execute(&buf, &issueEvent)
+			issueTemplate.Execute(&buf, &issueEvent)
 
-			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.Namespace)
+			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.PathWithNamespace)
 
 		case "Push Hook", "Push Event":
-			log.Printf("Got Hook for a Push Event")
 			var pushEvent PushEvent
 			if err := decoder.Decode(&pushEvent); err != nil {
 				log.Error(err)
@@ -379,28 +368,28 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			if pushEvent.AfterCommit == NullCommit {
 				// Branch was deleted
 				var buf bytes.Buffer
-				err = branchDeleteTemplate.Execute(&buf, &pushEvent)
-				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+				branchDeleteTemplate.Execute(&buf, &pushEvent)
+				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 			} else {
 				if pushEvent.BeforeCommit == NullCommit {
 					// Branch was created
 					var buf bytes.Buffer
-					err = branchCreateTemplate.Execute(&buf, &pushEvent)
-					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+					branchCreateTemplate.Execute(&buf, &pushEvent)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 				}
 
 				if pushEvent.TotalCommits > 0 {
 					// when the beforeCommit does not exist, we can't link to a compare without skipping the first commit
 					var buf bytes.Buffer
 					if pushEvent.BeforeCommit == NullCommit {
-						err = pushCommitLogTemplate.Execute(&buf, &pushEvent)
+						pushCommitLogTemplate.Execute(&buf, &pushEvent)
 					} else {
 						pushEvent.BeforeCommit = pushEvent.BeforeCommit[0:7]
 						pushEvent.AfterCommit = pushEvent.AfterCommit[0:7]
-						err = pushCompareTemplate.Execute(&buf, &pushEvent)
+						pushCompareTemplate.Execute(&buf, &pushEvent)
 					}
 
-					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 
 					// Limit number of commit meessages to 3
 					if pushEvent.TotalCommits > m.commitLimit {
@@ -427,24 +416,26 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 						}
 
 						var buf bytes.Buffer
-						err = commitTemplate.Execute(&buf, &context)
+						err := commitTemplate.Execute(&buf, &context)
 
 						if err != nil {
 							log.Printf("ERROR: %v", err)
 							return
 						}
-						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.Namespace)
+						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 					}
 
 					if pushEvent.TotalCommits > m.commitLimit {
 						var message = fmt.Sprintf("and %d more commits.", pushEvent.TotalCommits-m.commitLimit)
-						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.Namespace)
+						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
 					}
 				}
 			}
 
 		default:
-			log.Printf("Unknown event: %s", eventType)
+			log.WithFields(log.Fields{
+				"EventType": eventType,
+			}).Warn("Can't handle this event type")
 		}
 
 	}

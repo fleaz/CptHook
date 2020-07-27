@@ -12,8 +12,8 @@ import (
 )
 
 func TestPrometheusHandler(t *testing.T) {
-	viper.SetConfigName("cpthook")
-	viper.AddConfigPath("../")
+	viper.SetConfigName("testconfig")
+	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(err)
