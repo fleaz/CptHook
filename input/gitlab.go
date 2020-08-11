@@ -337,7 +337,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				return
 			}
 
-			mergeEvent.Merge.Action = HookActions[mergeEvent.Merge.Action]
+			if action, ok := HookActions[mergeEvent.Merge.Action]; ok {
+				mergeEvent.Merge.Action = action
+			}
 
 			mergeTemplate.Execute(&buf, &mergeEvent)
 
@@ -350,7 +352,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				return
 			}
 
-			issueEvent.Issue.Action = HookActions[issueEvent.Issue.Action]
+			if action, ok := HookActions[issueEvent.Issue.Action]; ok {
+				issueEvent.Issue.Action = action
+			}
 
 			issueTemplate.Execute(&buf, &issueEvent)
 
