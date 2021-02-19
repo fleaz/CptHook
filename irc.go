@@ -120,12 +120,16 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	log.Info("Connecting to IRC server")
 	for {
-		if err := client.Connect(); err != nil {
-			clientLock.Lock()
-			log.Warnf("Connection to %s terminated: %s", client.Server(), err)
-			log.Warn("Reconnecting in 30 seconds...")
-			time.Sleep(30 * time.Second)
-		}
+		// client.Connect() blocks. It returns nil if we call a client.Close() which we never do.
+		// If the the connection is dropped/broken (recognized if we don't get a PONG 60 seconds
+		// after we sent a PING) an error is returned.
+		err := client.Connect()
+		// FIXME: if client.Connect() fails twice without going in state connected our handler is
+		// not called. This means that the lock is still acquired and we will hang here forever.
+		clientLock.Lock()
+		log.Warnf("Connection terminated: %s", err)
+		log.Warn("Reconnecting in 30 seconds...")
+		time.Sleep(30 * time.Second)
 	}
 
 }
