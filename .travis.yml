@@ -1,8 +1,8 @@
 ---
 language: go
 go:
-  - "1.12"
-  
+  - "1.14"
+
 services:
   - docker
 
@@ -18,26 +18,26 @@ script:
   - docker build -f Dockerfile -t $IMAGE .
 
 deploy:
-# Build production Docker container
+  # Build production Docker container
   - provider: script
     skip_cleanup: true
     script: bash scripts/deploy.sh stable
     on:
-      branch: master
-# Build tagged Docker container
+      branch: main
+  # Build tagged Docker container
   - provider: script
     skip_cleanup: true
     script: bash scripts/deploy.sh $TRAVIS_TAG
     on:
       tags: true
-      branch: master
-# Build development Docker container
+      branch: main
+  # Build development Docker container
   - provider: script
     skip_cleanup: true
     script: bash scripts/deploy.sh development
     on:
       branch: development
-# Build release files with goreleaser
+  # Build release files with goreleaser
   - provider: script
     skip_cleanup: true
     script: curl -sL https://git.io/goreleaser | bash

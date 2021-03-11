@@ -1,11 +1,11 @@
 # CptHook
-[![Build Status](https://travis-ci.org/fleaz/CptHook.svg?branch=master)](https://travis-ci.org/fleaz/CptHook)
+[![Build Status](https://travis-ci.org/fleaz/CptHook.svg?branch=main)](https://travis-ci.org/fleaz/CptHook)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fleaz/CptHook)](https://goreportcard.com/report/github.com/fleaz/CptHook)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/fleaz/CptHook/blob/master/LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/fleaz/CptHook/blob/main/LICENSE)
 
 CptHook provides a single endpoint where you can point all your webhook notifications to and get the nicely formatted in an IRC channel of your choice.
 
-Take a look at the [input](https://github.com/fleaz/CptHook/tree/master/input) folder to find out which services are
+Take a look at the [input](https://github.com/fleaz/CptHook/tree/main/input) folder to find out which services are
 already supported by CptHook.
 
 **If you have questions or problems come chat with us in #CptHook on HackInt** -> [WebChat](https://webirc.hackint.org/#irc://irc.hackint.org/#CptHook)

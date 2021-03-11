@@ -135,7 +135,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 	const pushCommitLogString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} pushed {{ .TotalCommits }} commits to \x0305{{ .Branch }}\x03 {{ .Project.WebURL }}/commits/{{ .Branch }}"
 	const branchCreateString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} created the branch \x0305{{ .Branch }}\x03"
 	const branchDeleteString = "[\x0312{{ .Project.Name }}\x03] {{ .UserName }} deleted the branch \x0305{{ .Branch }}\x03"
-	const commitString = "\x0315{{ .ShortID }}\x03 (\x0303+{{ .AddedFiles }}\x03|\x0308±{{ .ModifiedFiles }}\x03|\x0304-{{ .RemovedFiles }}\x03) \x0306{{ .Author.Name }}\x03: {{ .Message }}"
+	const commitString = "\x0315{{ .ShortID }}\x03 (\x0303+{{ .AddedFiles }}\x03|\x0308±{{ .ModifiedFiles }}\x03|\x0304-{{ .RemovedFiles }}\x03) \x0306{{ .Author.Name }}\x03: {{ .Title }}"
 	const issueString = "[\x0312{{ .Project.Name }}\x03] {{ .User.Name }} {{ .Issue.Action }} issue \x0308#{{ .Issue.Iid }}\x03: {{ .Issue.Title }} {{ .Issue.URL }}"
 	const mergeString = "[\x0312{{ .Project.Name }}\x03] {{ .User.Name }} {{ .Merge.Action }} merge request \x0308#{{ .Merge.Iid }}\x03: {{ .Merge.Title }} {{ .Merge.URL }}"
 	const pipelineCreateString = "[\x0312{{ .Project.Name }}\x03] Pipeline for commit {{ .Pipeline.Commit }} {{ .Pipeline.Status }} {{ .Project.WebURL }}/pipelines/{{ .Pipeline.ID }}"
@@ -337,7 +337,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				return
 			}
 
-			mergeEvent.Merge.Action = HookActions[mergeEvent.Merge.Action]
+			if action, ok := HookActions[mergeEvent.Merge.Action]; ok {
+				mergeEvent.Merge.Action = action
+			}
 
 			mergeTemplate.Execute(&buf, &mergeEvent)
 
@@ -350,7 +352,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				return
 			}
 
-			issueEvent.Issue.Action = HookActions[issueEvent.Issue.Action]
+			if action, ok := HookActions[issueEvent.Issue.Action]; ok {
+				issueEvent.Issue.Action = action
+			}
 
 			issueTemplate.Execute(&buf, &issueEvent)
 
@@ -399,6 +403,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 					for _, commit := range pushEvent.Commits {
 						type CommitContext struct {
 							ShortID       string
+							Title         string
 							Message       string
 							Author        Author
 							AddedFiles    int
@@ -408,6 +413,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 						context := CommitContext{
 							ShortID:       commit.ID[0:7],
+							Title:         strings.Split(commit.Message, "\n")[0],
 							Message:       commit.Message,
 							Author:        commit.Author,
 							AddedFiles:    len(commit.Added),

@@ -5,11 +5,11 @@ logging:
     level: "INFO"
 
 irc:
-    host: "irc.hackint.eu"
-    port: 6667
+    host: "irc.hackint.org"
+    port: 6697
     ssl:
         enabled: true
-        cafile: "/etc/ssl/hackint.pem"
+        cafile: "/etc/ssl/certs/ca-certificates.crt"
         client_cert:
             certfile: "/home/bot/bot.cert"
             keyfile: "/home/bot/bot.key"
