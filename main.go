@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	inputChannel = make(chan input.IRCMessage, 10)
+	inputChannel = make(chan input.IRCMessage, 30)
 	version      = "dev"
 	commit       = "none"
 	date         = time.Now().Format(time.RFC3339)
@@ -100,6 +100,22 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			"host":   r.Host,
 			"uri":    r.URL,
 		}).Debug("Received HTTP request")
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func ircCheckMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !client.IsConnected() {
+			log.WithFields(log.Fields{
+				"remote": r.RemoteAddr,
+				"uri":    r.URL,
+			}).Warn("IRC server is disconnected. Dropping incoming HTTP request")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("IRC server disconnected"))
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -142,7 +158,7 @@ func main() {
 		configPath := fmt.Sprintf("modules.%s", blockName)
 		module.Init(viper.Sub(configPath), &inputChannel)
 		channelList = append(channelList, module.GetChannelList()...)
-		http.HandleFunc(blockConfig.Endpoint, loggingMiddleware(module.GetHandler()))
+		http.HandleFunc(blockConfig.Endpoint, loggingMiddleware(ircCheckMiddleware(module.GetHandler())))
 	}
 
 	// Start IRC connection
