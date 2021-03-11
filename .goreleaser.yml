@@ -1,12 +1,12 @@
 builds:
-- env:
-    - CGO_ENABLED=0
-  goos:
-    - linux
-    - darwin
-  goarch:
-    - amd64
-    - arm64
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
 
 archives:
   - replacements:
@@ -17,7 +17,7 @@ archives:
       - cpthook.yml.example
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 snapshot:
   name_template: "{{ .Tag }}-next"
@@ -26,6 +26,5 @@ changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test_data:'
-
+      - "^docs:"
+      - "^test_data:"
