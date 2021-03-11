@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -16,10 +15,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	client     *girc.Client
-	clientLock = &sync.RWMutex{}
-)
+var client *girc.Client
 
 func ircConnection(config *viper.Viper, channelList []string) {
 	clientConfig := girc.Config{
@@ -89,12 +85,10 @@ func ircConnection(config *viper.Viper, channelList []string) {
 		}
 	}
 
-	clientLock.Lock()
 	client = girc.New(clientConfig)
 
 	client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
 		log.Info("Sucessfully connected to the IRC server. Starting to join channel.")
-		clientLock.Unlock()
 		for _, name := range removeDuplicates(channelList) {
 			joinChannel(name)
 		}
@@ -105,7 +99,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 			log.WithFields(log.Fields{
 				"Event": e.String(),
 			}).Debug("Received a PRIMSG")
-			message := "Hi. I'm a CptHook bot. Visit https://github.com/fleaz/CptHook to learn more"
+			message := "Hi. I'm a CptHook bot. Visit https://github.com/fleaz/CptHook to learn more."
 			if version == "dev" {
 				message += fmt.Sprintf(" I was compiled by hand at %v", date)
 			} else {
@@ -120,16 +114,13 @@ func ircConnection(config *viper.Viper, channelList []string) {
 
 	log.Info("Connecting to IRC server")
 	for {
-		// client.Connect() blocks. It returns nil if we call a client.Close() which we never do.
+		// client.Connect() blocks while we are connected.
 		// If the the connection is dropped/broken (recognized if we don't get a PONG 60 seconds
 		// after we sent a PING) an error is returned.
 		err := client.Connect()
-		// FIXME: if client.Connect() fails twice without going in state connected our handler is
-		// not called. This means that the lock is still acquired and we will hang here forever.
-		clientLock.Lock()
-		log.Warnf("Connection terminated: %s", err)
-		log.Warn("Reconnecting in 30 seconds...")
-		time.Sleep(30 * time.Second)
+		log.Warnf("Connection terminated. Reason: %s\n", err)
+		log.Warn("Reconnecting in 10 seconds...")
+		time.Sleep(10 * time.Second)
 	}
 
 }
@@ -164,9 +155,8 @@ func channelReceiver() {
 		}).Debug("IRC handler received a message")
 		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
-			clientLock.RLock()
 			client.Cmd.Message(elem.Channel, message)
-			clientLock.RUnlock()
+
 		}
 	}
 }
@@ -181,8 +171,6 @@ func joinChannel(newChannel string) {
 	log.WithFields(log.Fields{
 		"channel": newChannel,
 	}).Info("Need to join a new channel")
-
-	clientLock.RLock()
 	client.Cmd.Join(newChannel)
-	clientLock.RUnlock()
+
 }
