@@ -1,0 +1,37 @@
+name: goreleaser
+
+on:
+  push:
+    branch:
+      - "development"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - run: cp cpthook.yml.example cpthook.yml
+      - run: go build
+      - name: Test
+        run: go test -v ./...
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Push to GH Container Registry
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          registry: ghcr.io
+          username: "fleaz"
+          password: ${{ secrets.PAT }}
+          repository: fleaz/cpthook
+          tags: development
