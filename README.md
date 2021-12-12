@@ -29,7 +29,7 @@ already supported by CptHook.
 
 ```
 vim cpthook.yml
-docker run --rm -it -v $(pwd)/cpthook.yml:/etc/cpthook.yml -p 8086:8086 fleaz/cpthook:stable
+docker run --rm -it -v $(pwd)/cpthook.yml:/etc/cpthook.yml -p 8086:8086 ghcr.io/fleaz/cpthook:stable
 ```
 
 ### Prebuild binaries
