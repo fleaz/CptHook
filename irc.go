@@ -110,7 +110,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 	})
 
 	// Start thread to process message queue
-	go channelReceiver()
+	go channelReceiver(config.GetBool("use_notice"))
 
 	log.Info("Connecting to IRC server")
 	for {
@@ -144,7 +144,7 @@ func removeDuplicates(input []string) []string {
 	return output
 }
 
-func channelReceiver() {
+func channelReceiver(useNotice bool) {
 	log.Info("ChannelReceiver started")
 
 	for elem := range inputChannel {
@@ -155,8 +155,11 @@ func channelReceiver() {
 		}).Debug("IRC handler received a message")
 		joinChannel(elem.Channel)
 		for _, message := range elem.Messages {
-			client.Cmd.Message(elem.Channel, message)
-
+			if useNotice {
+				client.Cmd.Notice(elem.Channel, message)
+			} else {
+				client.Cmd.Message(elem.Channel, message)
+			}
 		}
 	}
 }
