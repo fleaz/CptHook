@@ -11,7 +11,7 @@ builds:
 archives:
   - files:
       - LICENSE
-      - cpthook.yml.example
+      - cpthook_example.yml
 
 checksum:
   name_template: "checksums.txt"

@@ -108,7 +108,7 @@ This dictionary maps hostnames to IRC-channels.
 
 ## Build a new module
 When you want to create a new module, e.g. for the service 'Foo', follow these steps to get started:
-  - Add a section 'foo' to `cpthook.yml.example`. Everything below `cpthook.foo` will be provided to your module. 
+  - Add a section 'foo' to `cpthook_example.yml`. Everything below `cpthook.foo` will be provided to your module. 
   - Add a case to the `main.createModuleObject` function
   - Create `foo.go` and `foo_test.go` files in the `input` folder
   - Implement the `Module` interface according to `input/helper.go`

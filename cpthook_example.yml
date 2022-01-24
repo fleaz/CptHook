@@ -2,14 +2,20 @@ http:
     listen: ":8086"
 
 logging:
+    # Available values are: TRACE, DEBUG, INFO, WARN, ERROR, FATAL, PANIC
     level: "INFO"
 
 irc:
     host: "irc.hackint.org"
     port: 6697
+
+    # When enabled, CptHook will use NOTICE instead of PRIVMSG to post messages
     use_notice: false
+
     ssl:
         enabled: true
+
+        # You actually only have to set this when your irc server uses a self-signed certificate
         cafile: "/etc/ssl/certs/ca-certificates.crt"
         client_cert:
             certfile: "/home/bot/bot.cert"
@@ -21,9 +27,13 @@ irc:
         password: "VerySecure!"
 
 modules:
+    # The name of the entry is arbitrary and can be choosen by you
     my-prom-endpoint:
+        # Required: The URL path where this module will listen
         endpoint: "/prom"
+        # Required: The type of module you wan't to use. Check the README for available options
         type: "prometheus"
+        # Rest of the options are module specific and are documented in the README
         channel: "#prometheusChannel"
         hostname_filter: "(\\w*)\\.company.com:\\d{4}"
 
@@ -44,6 +54,8 @@ modules:
         default_channel: "#defaultChannel"
 
     another-simple:
+        # By giving them different URL endpoints, you can load a module twice
+        # to route webhooks to different irc channels
         endpoint: "/simple2"
         type: "simple"
         default_channel: "#defaultChannel"
