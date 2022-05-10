@@ -1,7 +1,7 @@
 # CptHook
 [![Build Status](https://travis-ci.org/fleaz/CptHook.svg?branch=main)](https://travis-ci.org/fleaz/CptHook)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fleaz/CptHook)](https://goreportcard.com/report/github.com/fleaz/CptHook)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/fleaz/CptHook/blob/main/LICENSE)
+MIT[![License: ](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/fleaz/CptHook/blob/main/LICENSE)
 
 CptHook provides a single endpoint where you can point all your webhook notifications to and get the nicely formatted in an IRC channel of your choice.
 
@@ -108,7 +108,7 @@ This dictionary maps hostnames to IRC-channels.
 
 ## Build a new module
 When you want to create a new module, e.g. for the service 'Foo', follow these steps to get started:
-  - Add a section 'foo' to `cpthook.yml.example`. Everything below `cpthook.foo` will be provided to your module. 
+  - Add a section 'foo' to `cpthook_example.yml`. Everything below `cpthook.foo` will be provided to your module. 
   - Add a case to the `main.createModuleObject` function
   - Create `foo.go` and `foo_test.go` files in the `input` folder
   - Implement the `Module` interface according to `input/helper.go`
