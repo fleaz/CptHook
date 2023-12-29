@@ -60,7 +60,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 		if cafile := config.GetString("ssl.cafile"); cafile != "" {
 			log.WithFields(logrus.Fields{
 				"cafile": cafile,
-			}).Info("Configuring custpm for IRC connection")
+			}).Info("Using custom CA certificate for the IRC connection")
 			caCert, err := ioutil.ReadFile(cafile)
 			if err != nil {
 				log.Fatal(err)
