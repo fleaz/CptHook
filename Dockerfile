@@ -1,4 +1,4 @@
-FROM golang:1.14 AS builder
+FROM golang:1.21 AS builder
 WORKDIR /go/src/cpthook
 COPY . /go/src/cpthook
 RUN CGO_ENABLED=0 GOOS=linux go build
