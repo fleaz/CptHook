@@ -112,6 +112,12 @@ func ircCheckMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				"remote": r.RemoteAddr,
 				"uri":    r.URL,
 			}).Warn("IRC server is disconnected. Dropping incoming HTTP request")
+
+			// In some weird situations the IsConnected function detects that we are no longer connected,
+			// but the reconnect logic in irc.go doesn't detects the connection problem and won't reconnect
+			// Therefore if we detect that problem here, we Close() the connection manually and force a reconenct
+			client.Close()
+
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("IRC server disconnected"))
 			return
