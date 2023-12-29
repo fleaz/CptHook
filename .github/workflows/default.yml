@@ -1,0 +1,7 @@
+name: goreleaser
+
+on: push
+
+jobs:
+  default: 
+    uses: ./.github/workflows/buildAndTest.yaml
