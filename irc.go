@@ -115,7 +115,7 @@ func ircConnection(config *viper.Viper, channelList []string) {
 	log.Info("Connecting to IRC server")
 	for {
 		// client.Connect() blocks while we are connected.
-		// If the the connection is dropped/broken (recognized if we don't get a PONG 60 seconds
+		// If the the connection is dropped/broken (recognized if we don't get a PONG 30 seconds
 		// after we sent a PING) an error is returned.
 		err := client.Connect()
 		log.Warnf("Connection terminated. Reason: %s\n", err)
