@@ -82,19 +82,23 @@ func (m *GitlabModule) Init(c *viper.Viper, channel *chan IRCMessage) {
 
 }
 
-func (m GitlabModule) sendMessage(message string, projectName string, pathWithNamespace string) {
+// send message to IRC channels. If ircChannels is empty, uses m.channelNames (from config)
+func (m GitlabModule) sendMessage(message string, projectName string, pathWithNamespace string, ircChannels []string) {
 	var channelNames []string
-
-	if list := contains(m.channelMapping.ExplicitMappings, pathWithNamespace); len(list) > 0 { // Check if explizit mapping exists
-		for _, channelName := range m.channelMapping.ExplicitMappings[pathWithNamespace] {
-			channelNames = append(channelNames, channelName)
+	if len(ircChannels) > 0 {
+		channelNames = ircChannels
+	} else {
+		if list := contains(m.channelMapping.ExplicitMappings, pathWithNamespace); len(list) > 0 { // Check if explizit mapping exists
+			for _, channelName := range m.channelMapping.ExplicitMappings[pathWithNamespace] {
+				channelNames = append(channelNames, channelName)
+			}
+		} else if list := prefixContains(m.channelMapping.GroupMappings, pathWithNamespace); len(list) > 0 { // Check if group mapping exists
+			for _, channelName := range list {
+				channelNames = append(channelNames, channelName)
+			}
+		} else { // Fall back to default channel
+			channelNames = append(channelNames, m.channelMapping.DefaultChannel)
 		}
-	} else if list := prefixContains(m.channelMapping.GroupMappings, pathWithNamespace); len(list) > 0 { // Check if group mapping exists
-		for _, channelName := range list {
-			channelNames = append(channelNames, channelName)
-		}
-	} else { // Fall back to default channel
-		channelNames = append(channelNames, m.channelMapping.DefaultChannel)
 	}
 
 	for _, channelName := range channelNames {
@@ -267,6 +271,9 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			Repository Repository `json:"repository"`
 		}
 
+		// Get channel(s) to send to
+		queryChannels := req.URL.Query()["channel"]
+
 		var buf bytes.Buffer
 
 		switch eventType {
@@ -292,14 +299,14 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
 				pipelineCreateTemplate.Execute(&buf, &pipelineEvent)
-				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace, queryChannels)
 
 			} else if pipelineEvent.Pipeline.Status == "success" || pipelineEvent.Pipeline.Status == "failed" {
 				// colorize status
 				pipelineEvent.Pipeline.Status = JobStatus[pipelineEvent.Pipeline.Status]
 
 				pipelineCompleteTemplate.Execute(&buf, &pipelineEvent)
-				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace)
+				m.sendMessage(buf.String(), pipelineEvent.Project.Name, pipelineEvent.Project.PathWithNamespace, queryChannels)
 			}
 
 		case "Job Hook":
@@ -328,7 +335,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 			jobEvent.Status = JobStatus[jobEvent.Status]
 
 			jobCompleteTemplate.Execute(&buf, &jobEvent)
-			m.sendMessage(buf.String(), jobEvent.Repository.Name, pathWithNamespace)
+			m.sendMessage(buf.String(), jobEvent.Repository.Name, pathWithNamespace, queryChannels)
 
 		case "Merge Request Hook", "Merge Request Event":
 			var mergeEvent MergeEvent
@@ -343,7 +350,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			mergeTemplate.Execute(&buf, &mergeEvent)
 
-			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.PathWithNamespace)
+			m.sendMessage(buf.String(), mergeEvent.Project.Name, mergeEvent.Project.PathWithNamespace, queryChannels)
 
 		case "Issue Hook", "Issue Event":
 			var issueEvent IssueEvent
@@ -358,7 +365,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 
 			issueTemplate.Execute(&buf, &issueEvent)
 
-			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.PathWithNamespace)
+			m.sendMessage(buf.String(), issueEvent.Project.Name, issueEvent.Project.PathWithNamespace, queryChannels)
 
 		case "Push Hook", "Push Event":
 			var pushEvent PushEvent
@@ -373,13 +380,13 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				// Branch was deleted
 				var buf bytes.Buffer
 				branchDeleteTemplate.Execute(&buf, &pushEvent)
-				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
+				m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace, queryChannels)
 			} else {
 				if pushEvent.BeforeCommit == NullCommit {
 					// Branch was created
 					var buf bytes.Buffer
 					branchCreateTemplate.Execute(&buf, &pushEvent)
-					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace, queryChannels)
 				}
 
 				if pushEvent.TotalCommits > 0 {
@@ -393,7 +400,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 						pushCompareTemplate.Execute(&buf, &pushEvent)
 					}
 
-					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
+					m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace, queryChannels)
 
 					// Limit number of commit meessages to 3
 					if pushEvent.TotalCommits > m.commitLimit {
@@ -428,12 +435,12 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 							log.Printf("ERROR: %v", err)
 							return
 						}
-						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
+						m.sendMessage(buf.String(), pushEvent.Project.Name, pushEvent.Project.PathWithNamespace, queryChannels)
 					}
 
 					if pushEvent.TotalCommits > m.commitLimit {
 						var message = fmt.Sprintf("and %d more commits.", pushEvent.TotalCommits-m.commitLimit)
-						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.PathWithNamespace)
+						m.sendMessage(message, pushEvent.Project.Name, pushEvent.Project.PathWithNamespace, queryChannels)
 					}
 				}
 			}
