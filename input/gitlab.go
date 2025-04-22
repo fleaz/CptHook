@@ -367,7 +367,7 @@ func (m GitlabModule) GetHandler() http.HandlerFunc {
 				return
 			}
 
-			pushEvent.Branch = strings.Split(pushEvent.Branch, "/")[2]
+			pushEvent.Branch = strings.TrimPrefix(pushEvent.Branch, "refs/heads/")
 
 			if pushEvent.AfterCommit == NullCommit {
 				// Branch was deleted
